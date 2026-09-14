@@ -334,8 +334,12 @@ class ComposeChatActivity : ComponentActivity() {
      * 每次启动都提示（不写"已提示过"标记）：没有密钥就无法对话，静默失败会让人以为 App 坏了。
      */
     private fun maybeHintApiKey() {
-        val key = getSharedPreferences("dsh_host", MODE_PRIVATE).getString("api_key", "").orEmpty().trim()
+        val key = SecurePrefs.apiKey(this).trim()
         if (key.isNotEmpty()) return
+        if (SecurePrefs.lostDueToFailure()) {
+            notify("API Key 解密失败（Keystore 可能已重置），请到 设置 → Android 宿主 重新填写")
+            return
+        }
         notify("尚未设置 API Key：请在 设置 → Android 宿主 → API Key 填入你自己的密钥后使用")
     }
     /**
@@ -758,12 +762,12 @@ class ComposeChatActivity : ComponentActivity() {
                             else { if (f.exists()) f.delete() }
                         }
                         override fun restartEngine() = DshHostService.restart(this@ComposeChatActivity)
-                        override fun apiKey(): String =
-                            getSharedPreferences("dsh_host", MODE_PRIVATE).getString("api_key", "") ?: ""
+                        override fun apiKey(): String = SecurePrefs.apiKey(this@ComposeChatActivity)
                         override fun setApiKey(key: String) {
-                            getSharedPreferences("dsh_host", MODE_PRIVATE)
-                                .edit().putString("api_key", key).apply()
-                        }
+            if (!SecurePrefs.setApiKey(this@ComposeChatActivity, key)) {
+                notify("加密存储不可用，密钥未保存")
+            }
+        }
                         override fun showApiKeyDialog(onSet: (Boolean) -> Unit) {
                             val et = android.widget.EditText(this@ComposeChatActivity).apply {
                                 hint = "sk-…（留空恢复默认）"

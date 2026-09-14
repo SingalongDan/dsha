@@ -413,7 +413,27 @@ private fun AndroidHostSection(provider: SettingsProvider) {
                 title = "Root 模式",
                 value = if (rootMode) "开启" else "关闭",
                 onClick = {
-                    provider.setRootMode(!rootMode)
+                    if (!rootMode) {
+                        // 开启前必须明确告知：Agent 的全部 shell 命令将以 root 执行，
+                        // 且此后不再逐次弹授权（授权完全交给 KernelSU 等管理器）。
+                        android.app.AlertDialog.Builder(provider.activityContext())
+                            .setTitle("开启 Root 模式？")
+                            .setMessage(
+                                "开启后，Agent 的 bash 等 shell 工具将一律以 root 身份执行，" +
+                                    "不再逐次征求授权。\n\n" +
+                                    "仅在你信任当前会话要执行的内容时开启；" +
+                                    "不需要时请随时关闭。"
+                            )
+                            .setPositiveButton("仍要开启") { _, _ ->
+                                provider.setRootMode(true)
+                                rootMode = true
+                            }
+                            .setNegativeButton("取消", null)
+                            .show()
+                    } else {
+                        provider.setRootMode(false)
+                        rootMode = false
+                    }
                     rootMode = !rootMode
                 },
             )

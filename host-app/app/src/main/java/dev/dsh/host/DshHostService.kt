@@ -129,10 +129,7 @@ class DshHostService : Service() {
      * 也会让"引擎的密钥从哪来"变得不可审计。未填写时返回空串，由调用方完全不注入该环境变量
      * （引擎会走它自己的凭据存储，或明确报错提示需要密钥）。
      */
-    private fun apiKey(): String {
-        val prefs = getSharedPreferences("dsh_host", MODE_PRIVATE)
-        return prefs.getString("api_key", "").orEmpty().trim()
-    }
+    private fun apiKey(): String = SecurePrefs.apiKey(this).trim()
 
     private fun engineLoop() {
         while (running) {
