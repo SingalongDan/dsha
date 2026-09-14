@@ -1674,6 +1674,14 @@ class ComposeChatActivity : ComponentActivity() {
         sessionId = id
         currentSessionId.value = id
         prefsPut(id)          // 统一持久化：抽屉切换/分叉跳转也要能被"进程被杀后恢复"读到
+        // 模式胶囊要显示**该会话真正的预设**，否则切走再切回会回落成"标准"（标签只在
+        // dialogSetPreset 里改过，切换会话时从不刷新）—— 用户会以为预设丢了。
+        // session/list 已经把 preset 解析进 SessionItem，这里直接取用。
+        runCatching {
+            fullSessions.firstOrNull { it.id == id }?.preset?.takeIf { it.isNotEmpty() }?.let {
+                currentPresetLabel.value = presetLabelOf(it)
+            }
+        }
         controller?.switchSession(id)
     }
 
@@ -1975,14 +1983,18 @@ class ComposeChatActivity : ComponentActivity() {
     /** 应用 Agent 预设：空白会话可 select；否则新建会话带该预设（对齐 web「预设随创建」）。 */
     private fun dialogSetPreset(sid: String, preset: String) {
         lifecycleScope.launch(Dispatchers.IO) {
-            val label = when (preset) {
-                "minimal" -> "极简"
-                "ptc" -> "PTC"
-                "cordis" -> "创造"
-                else -> "标准"
+            val label = presetLabelOf(preset)
+            val res = runCatching { api.agentPresetsSelect(sid, preset) }
+            res.onFailure {
+                // **请求失败**与"预设已锁定"是两回事：此前一律当成后者 → 静默新建一个空会话并切走，
+                // 用户看到的是"点了个预设，凭空多出一个空会话"，且原会话被丢在后面（M6）。
+                Log.e("DshStream", "agentPresetsSelect failed", it)
+                runOnUiThread {
+                    notify("切换模式失败（会话未改动）：${it.message ?: "引擎未就绪"}")
+                }
             }
-            val changed = runCatching { api.agentPresetsSelect(sid, preset) }
-                .getOrNull()?.let { (it as? String) == preset } == true
+            val changed = res.getOrNull()?.let { (it as? String) == preset } == true
+            if (res.isFailure) return@launch     // 失败已提示，绝不退化成"新建空会话"
             if (changed) {
                 currentPresetLabel.value = label
                 refreshSessions()
@@ -2217,4 +2229,13 @@ private fun connLabel(state: String): String = when (state) {
     "RECONNECTING" -> "重连中…"
     "AUTH_LOST" -> "鉴权失效，重连中…"
     else -> state
+}
+
+/** Agent 预设 id → 界面显示名（与新建页/输入栏芯片保持一致）。 */
+private fun presetLabelOf(preset: String): String = when (preset) {
+    "minimal" -> "极简"
+    "ptc" -> "PTC"
+    "cordis" -> "创造"
+    "standard" -> "标准"
+    else -> "标准"
 }
