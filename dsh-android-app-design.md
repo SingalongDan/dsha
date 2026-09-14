@@ -511,7 +511,7 @@ dev.dsh.host/
 
 ## 10. 软件信息/开源协议（第 6 栏目细化）
 
-- 展示：应用名 DshHost / 版本 / 构建号 / 渠道（debug/release）/ 引擎（dsh 0.1.2-rc.1，node 24.18.0）/ 权限清单。
+- 展示：应用名 DSHA / 版本 / 构建号 / 渠道（debug/release）/ 引擎（当前随包 dsh 0.1.5-rc.2 + node 24.18.0，**运行时读取**，非硬编码）/ 权限清单。
 - 开源协议文本：内嵌 LICENSE（AGPL-3.0 全文本），并列出关键第三方许可链接。
 - 数据/隐私：API Key 仅存本机（credentials 文件），不上传；崩溃日志仅本机。
 
@@ -761,7 +761,7 @@ dev.dsh.host/
    前台不打扰（界面内已有反馈）；尊重 Android 13+ 通知权限（未授权则不发）。
    **真机验证**（发消息 → 按 Home 退后台 → 等回合完成）：
    `dumpsys notification` 出现 `id=1001 channel=dsh_turns android.title=会话已完成`；
-   通知栏截图显示「DshHost · 会话已完成 · 问候与开场白」✅
+   通知栏截图显示「DshHost · 会话已完成 · 问候与开场白」✅（历史记录：当时产品名尚为 DshHost，后改名 DSHA）
 34. 本轮还修掉三处编译期问题（通知权限自检方法、`CharSequence` 推断、
    **变量声明顺序**——通知块被误放在 `title` 声明之前），均由"改完即编译"的循环即时暴露。
 
@@ -771,7 +771,7 @@ dev.dsh.host/
    标题「需要你确认」/「需要你选择」+ 会话名；回前台自动取消（`onResume` → `cancel(1002)`）。
    **真机验证**：`onPause → resumed=false` → `pending event id=… resumed=false` → `notifyNeedsInput(allowed=true)`
    → `dumpsys` 出现 `id=1002 channel=dsh_turns android.title=需要你选择`；
-   通知栏截图「DshHost · 需要你选择 · 会话 · 点击继续」；`am start` 回前台后 id=1002 已取消 ✅
+   通知栏截图「DshHost · 需要你选择 · 会话 · 点击继续」（同上，历史记录）；`am start` 回前台后 id=1002 已取消 ✅
 36. **通知架构修正（重要）**：通知原先挂在 Compose 的 `LaunchedEffect` 上——
    **App 退到后台后不再产生帧、重组停止，UI 侧的状态观察可能永不触发**，
    而"后台完成/需要确认"恰恰是通知唯一有意义的场景（上一轮完成通知能成功是时机侥幸）。
@@ -1099,7 +1099,7 @@ dev.dsh.host/
     每级缩进 16dp、层次清晰 ✅（含 Tab 归一化为 2 空格的处理）
 113. **release 产物复核（`aapt2 dump badging/xmltree`）**：
     - `package dev.dsh.host versionCode=2 versionName=0.2.0`，体积 **134 MB**
-    - `application-label: 'DshHost'`（已本地化多语言标签）
+    - `application-label: 'DshHost'`（历史记录；现已改名 **DSHA**，见 manifest 与 strings）
     - `minSdkVersion 24 / targetSdkVersion 28` ← 刻意保持（engine exec 前提）
     - 权限齐全：FOREGROUND_SERVICE(_DATA_SYNC) / INTERNET / POST_NOTIFICATIONS /
       RECEIVE_BOOT_COMPLETED / **READ_EXTERNAL_STORAGE**（R42 补的文件分享读权限）
