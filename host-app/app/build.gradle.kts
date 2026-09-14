@@ -22,11 +22,11 @@ val keyAliasValue = secretOf("keyAlias", "DSH_KEY_ALIAS")
 val keyPass = secretOf("keyPassword", "DSH_KEY_PASSWORD")
 
 android {
-    namespace = "dev.dsh.host"
+    namespace = "io.github.singalongdan.dsha"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "dev.dsh.host"
+        applicationId = "io.github.singalongdan.dsha"
         minSdk = 24
         // 关键：学 Termux 压到 28，落在 untrusted_app_27 域，
         // 保留"从数据目录 exec 二进制"的 SELinux 权限（免 root、免 sepolicy 规则）。

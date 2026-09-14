@@ -2,7 +2,7 @@
 #
 # 提交方式（据官方快速入门指南）：
 #   1. Fork https://gitlab.com/fdroid/fdroiddata
-#   2. 把本文件放到 `metadata/dev.dsh.host.yml`
+#   2. 把本文件放到 `metadata/io.github.singalongdan.dsha.yml`
 #   3. 本地用 fdroidserver 校验：fdroid readmeta / rewritemeta / lint / checkupdates / build
 #   4. 推分支并开 **Merge Request**，标签选 `New App`
 #

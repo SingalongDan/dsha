@@ -66,7 +66,7 @@ JAVA_HOME=<jdk17> gradle assembleDebug
 JAVA_HOME=<jdk17> gradle assembleRelease
 # 安装并启动
 adb install -r host-app/app/build/outputs/apk/debug/app-debug.apk
-adb shell am start -n dev.dsh.host/.ComposeChatActivity -f 0x20
+adb shell am start -n io.github.singalongdan.dsha/.ComposeChatActivity -f 0x20
 ```
 产物：`app-debug.apk`（约 152 MB）、`app-release.apk`（约 134 MB，含引擎资源）。
 

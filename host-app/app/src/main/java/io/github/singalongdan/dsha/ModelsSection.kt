@@ -1,4 +1,4 @@
-package dev.dsh.host
+package io.github.singalongdan.dsha
 
 import android.widget.EditText
 import androidx.compose.foundation.background

@@ -1,4 +1,4 @@
-package dev.dsh.host
+package io.github.singalongdan.dsha
 
 import android.content.Context
 import android.content.SharedPreferences

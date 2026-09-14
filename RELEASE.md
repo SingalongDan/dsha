@@ -221,7 +221,7 @@ F-Droid 的 `UpdateCheckMode: Tags` 按正则筛选标签，其默认模式通�
 
 ### 5.2 F-Droid 提交流程（待执行）
 
-1. 在 `fdroiddata` 仓库提交 `metadata/dev.dsh.host.yml`，关键字段：
+1. 在 `fdroiddata` 仓库提交 `metadata/io.github.singalongdan.dsha.yml`，关键字段：
    `Categories` / `License` / `SourceCode` / `IssueTracker` / `Builds`（versionName、versionCode、commit）/ `AutoUpdateMode` / `UpdateCheckMode: Tags` / `AntiFeatures: NonFreeNet`
 2. 向 F-Droid 提交 Merge Request，等待审核（可能来回数轮）
 3. 审核通过后，F-Droid 侧构建并签名；我们据此在 GitHub 建对应的 Release 与 tag

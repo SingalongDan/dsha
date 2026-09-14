@@ -158,7 +158,7 @@
 ### 3.2 模块划分（包结构）
 
 ```
-dev.dsh.host/
+io.github.singalongdan.dsha/
 ├── engine/          DshHostService（已有）+ EngineController（生命周期/重启/日志）
 ├── net/
 │   ├── DshApiClient.kt      HTTP JSON-RPC（已有，扩展全部方法）
@@ -791,8 +791,8 @@ dev.dsh.host/
      把内容注入输入框（复用 `injectText`），并提示「已接收分享内容，可直接发送或补充说明」
    - **刻意不自动发送**：Agent 运行有成本，预填让用户能补充指令（"总结这个"之类）后再发
    **真机验证**：
-   - 系统解析：`cmd package resolve-activity -a android.intent.action.SEND -t text/plain -p dev.dsh.host`
-     → `name=dev.dsh.host.ComposeChatActivity` ✅（即出现在系统分享面板中）
+   - 系统解析：`cmd package resolve-activity -a android.intent.action.SEND -t text/plain -p io.github.singalongdan.dsha`
+     → `name=io.github.singalongdan.dsha.ComposeChatActivity` ✅（即出现在系统分享面板中）
    - 模拟分享：`am start -a android.intent.action.SEND -t text/plain --es android.intent.extra.TEXT '…'`
      → 日志 `share received 49 chars` → 会话列表新增「会话 4ceb9cc3」→ 输入框预填 `https://example.com/article 这…` ✅
 
@@ -847,7 +847,7 @@ dev.dsh.host/
     授权后继续复制（`onRequestPermissionsResult` → 重试）。
 53. **验证**：
     - 未授权：`share file: content://…` → `openInputStream failed`（复现问题）
-    - `pm grant` 后：`share file saved: /data/user/0/dev.dsh.host/files/home/shared/dsh-share-test.txt (23 bytes)`，
+    - `pm grant` 后：`share file saved: /data/user/0/io.github.singalongdan.dsha/files/home/shared/dsh-share-test.txt (23 bytes)`，
       工作区 `ls` 可见该文件（23 字节，内容正确）
     - 截图：新会话 + 输入框预填「我已把文件放到工作区：shared/dsh-share-test.txt…」✅
 
@@ -1068,11 +1068,11 @@ dev.dsh.host/
     - `mipmap/ic_launcher.xml`：API < 26 回退（layer-list）
     - `drawable/ic_stat_dsh.xml`：**通知单色小图标**，替换三处系统图标（FGS / 完成 / 需要确认）
     **验证**：APK 资源表含 `color/ic_launcher_background`、`drawable/ic_launcher_foreground`、`drawable/ic_launcher_legacy`；
-    桌面图标已变为品牌 8 角星；通知栏使用**本包资源**（`icon=Icon(pkg=dev.dsh.host id=0x7f07005f)`，
+    桌面图标已变为品牌 8 角星；通知栏使用**本包资源**（`icon=Icon(pkg=io.github.singalongdan.dsha id=0x7f07005f)`，
     此前是 `pkg=android` 系统图标），截图显示蓝底白星 ✅
 106. **发现真实缺陷（比图标更重要）**：设置页「前台通知」只检查**运行时权限**，显示"已授权"，
     但该安装实际 **POST_NOTIFICATIONS 未授予**（多次卸载/重装所致）→
-    `dumpsys` 显示 `AppSettings: dev.dsh.host importance=NONE` → **所有通知静默消失**
+    `dumpsys` 显示 `AppSettings: io.github.singalongdan.dsha importance=NONE` → **所有通知静默消失**
     （回合完成提醒、需要确认提醒全部失效，而界面还显示"已授权"= 误报）。
 107. **修复**：通知行改查**有效状态**：
     `areNotificationsEnabled()` + 运行时权限 → 三态显示「未授权（点击授权）／**已被系统关闭（点击去开启）**／已开启」，
@@ -1098,7 +1098,7 @@ dev.dsh.host/
     渲染为 `• parent A` / `  • child A1` / `    • grandchild A1a` / `  • child A2` / `• parent B`，
     每级缩进 16dp、层次清晰 ✅（含 Tab 归一化为 2 空格的处理）
 113. **release 产物复核（`aapt2 dump badging/xmltree`）**：
-    - `package dev.dsh.host versionCode=2 versionName=0.2.0`，体积 **134 MB**
+    - `package io.github.singalongdan.dsha versionCode=2 versionName=0.2.0`，体积 **134 MB**
     - `application-label: 'DshHost'`（历史记录；现已改名 **DSHA**，见 manifest 与 strings）
     - `minSdkVersion 24 / targetSdkVersion 28` ← 刻意保持（engine exec 前提）
     - 权限齐全：FOREGROUND_SERVICE(_DATA_SYNC) / INTERNET / POST_NOTIFICATIONS /

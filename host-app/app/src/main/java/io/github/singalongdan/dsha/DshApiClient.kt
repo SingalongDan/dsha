@@ -1,4 +1,4 @@
-package dev.dsh.host
+package io.github.singalongdan.dsha
 
 import org.json.JSONArray
 import org.json.JSONObject

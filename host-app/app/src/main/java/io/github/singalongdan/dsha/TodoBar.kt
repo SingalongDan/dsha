@@ -1,4 +1,4 @@
-package dev.dsh.host
+package io.github.singalongdan.dsha
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*

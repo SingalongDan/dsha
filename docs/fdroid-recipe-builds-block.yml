@@ -1,6 +1,6 @@
 # DSHA — F-Droid 构建配方（sudo / prebuild / build 三块）
 #
-# 本文件是 **`metadata/dev.dsh.host.yml` 里 `Builds:` 块**的完整草稿，
+# 本文件是 **`metadata/io.github.singalongdan.dsha.yml` 里 `Builds:` 块**的完整草稿，
 # 与 `docs/fdroid-build-recipe-build.sh`（build 步骤的脚本化内容）配套。
 #
 # ⚠️ 状态：**未验证**。整体从未在 F-Droid 构建机或等价 Linux 环境跑过
