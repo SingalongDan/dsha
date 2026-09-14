@@ -493,7 +493,7 @@ dev.dsh.host/
 
 - 应用版本号（versionName 0.1.0 → 递增）、应用 ID、构建时间。
 - 引擎版本（从引擎日志/`dsh --version` 读）、运行时（node 版本、前缀路径）。
-- 开源协议：AGPL-3.0（dsh）组件清单 + 本项目 LICENSE（AGPL-3.0 或 MIT 二选一，尊重 dsh 上游）。
+- 开源协议：上游 dsh 为 **MIT**（据随包 LICENSE 正文与 package.json —— 早期此处误记为 AGPL，已更正）；本项目自有代码许可由所有者决定（当前 LICENSE 为 AGPL-3.0）。第三方组件清单见 `NOTICE.md`。
 - 第三方依赖：@deepseek-ai 各包、OkHttp、Compose、Kotlin、协程、bionic/openssl/curl 等（README 生成）。
 
 ---
