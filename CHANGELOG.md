@@ -1,9 +1,19 @@
 # Changelog
 
-本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 的风格；
-版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
+本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 的风格。
 
-## [1.0.0] — 首个公开版本
+**版本约定**（完整规则见 [RELEASE.md](RELEASE.md)）：
+- 大版本号 `X.Y.Z` **仅由项目所有者决定**；开发过程中只递增候选序号 `rcN`。
+- 本地开发与推送使用**同一个大版本号**，推送不会让大版本号前进。
+- 每个对外版本都记录**随包引擎版本**（随包引擎由构建时打包决定，应用内「关于」页运行时读取，
+  此处为发布时的记录值，两者不一致时以应用内显示为准）。
+
+## [0.1.0-rc1] — 首个候选版本
+
+> 说明：早期草稿里曾有一个 `1.0.0` 的占位标题，**从未发布过**，已按实际版本口径更正为 `0.1.0-rc1`。
+
+**随包引擎**：`@deepseek-ai/dsh` **0.1.5-rc.2** · Node.js v24.18.0 · Termux bionic 前缀
+**应用版本**：`versionName = 0.1.0-rc1` · `versionCode = 2`
 
 第一个对外发布的版本：把 DeepSeek Harness（DSH）作为**引擎跑在手机里的原生 Android 客户端**交付。
 

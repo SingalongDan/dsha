@@ -101,7 +101,58 @@ Android 不允许签名不同的应用互相覆盖安装 —— 所以：
 
 ## 5. F-Droid 上线的硬性要求 与 当前差距（**最重要的部分**）
 
-F-Droid 不是"传个 APK 上去"，它的收录有明确政策。逐条对照我们当前状态：
+> **结论先行（研究结论）**：F-Droid **主仓库在现有形态下事实上不可行**，应作为 **nice-to-have 而非 must-have**。
+> 现实的分发基本盘是 **GitHub Release / Obtainium**；F-Droid 作为中长期目标，路径是"源码构建配方 **+** Reproducible Builds"。
+> 完整研究报告见 `DSHA-FDroid-研究报告.md`（每条结论附来源链接，并列出 12 条"未查到确证"）。
+
+### 5.0 三条硬阻塞（为什么"随包引擎"过不了 F-Droid 主仓库）
+
+| # | 阻塞 | 依据 |
+|---|---|---|
+| 1 | **依赖来源不在白名单** | 政策要求二进制依赖来自**源码编译**或白名单。白名单里 "Node.js" 看似可用，但 nodejs.org 官方制品是 **glibc 链接且没有 android 目标** → 对 bionic **无效**；"Debian repository downloads" 同理（Debian 的 `nodejs` 也是 glibc） |
+| 2 | **仓库内提交了预编译件** | `assets/usr/` 直接入库：`node` 47 MB、`libicudata.so.78` 33 MB、完整 `node_modules` |
+| 3 | **构建机产不出这些文件** | 仓库原本**没有任何原生件构建链路**（无 `ndkVersion` / `externalNativeBuild`）→ 已补 `host-app/scripts/build-native-addons.ps1`（§5.3），但**整套 bionic Node + 依赖库**仍需在构建机里从源码编出来 |
+
+**最硬的一条事实**：**bionic 版 Node 没有任何现成合规制品可下载** —— 全世界只有 Termux 在持续产出，
+而 **Termux 官方明确要求不得复用其包仓库**：
+`You cannot use our package repositories in your own project(s). Please build packages and host them yourself.`
+（许可证允许复用其组件，但**仓库托管被明确排除**。）
+
+### 5.2 ⚠️ "只上 F-Droid"是一扇单向门
+
+F-Droid 用**它自己的密钥**签名，那个签名就成为应用身份。因此：
+
+- 一旦 F-Droid 发布了 APK，**我们再也无法给这些用户分发自己签名的包**（Android 拒绝签名不同的覆盖安装）；
+- 想在两边都发，唯一正规解法是 **Reproducible Builds**：让 F-Droid 能构建出与上游**逐字节相同**的 APK，
+  从而**分发我们自己签名的包** —— 这样两条渠道签名一致、可交叉更新。
+  **RB 不是"预编译二进制的后门"**（研究员已核），它要求 F-Droid 自己也能从源码构建出相同产物。
+- 若决定**纯 F-Droid**：**不需要生成我们自己的密钥**（用 F-Droid 的即可），但代价是**放弃了自建分发的能力**，
+  且在上架等待期（周到月级）**没有任何分发渠道**。
+
+### 5.3 已完成的准备工作
+
+| 项 | 状态 |
+|---|---|
+| gradle wrapper | ✅ 已补（8.13）—— F-Droid 配方默认走 wrapper |
+| 依赖仓库官方优先 | ✅ 默认只有 `google()` + `mavenCentral()`；阿里云镜像退到 `DSH_CN_MIRROR=1` 开关（**实测：国内直连 Maven Central 会失败，本地构建必须用开关**；F-Droid/境外 CI 走官方源） |
+| 第三方许可清单 | ✅ `NOTICE.md`（扫描 490 个随包依赖；唯一 copyleft 是 `@img/sharp-wasm32` 的 LGPL 组件） |
+| 上游许可口径 | ✅ 已查实**上游是 MIT**（据随包 `LICENSE` 正文 + `package.json`），此前的"AGPL"表述是错的，已更正 |
+| 原生件构建链路 | ✅ `host-app/scripts/build-native-addons.ps1`（从随包源码编译，`system.node` **逐字节复现**、`pty.node` 功能验证通过） |
+| 版本口径 | ✅ CHANGELOG 改为 `0.1.0-rcN` 写法并记录随包引擎版本 |
+
+### 5.4 待办（按优先级）
+
+1. **APK 瘦身**（当前 122 MiB）：这是打开 IzzyOnDroid（30 MB 上限）的**唯一门槛**，也是路线 C 的收益点
+2. **发两个 issue**：① IzzyOnDroid 的 AI 政策适用性（其政策写着拒绝 LLM 前端，我们需要确认是否适用）；
+   ② fdroiddata **政策咨询 issue（先问再写代码，不要直接提 MR）**
+3. **自编译原生件的 POSIX shell 版本**：F-Droid 构建机是 Linux，需要 `.sh` 版本；
+   ⚠️ **本机无 bash，无法验证**，须在 F-Droid 阶段实测（当前 `.ps1` 已实测可用）
+4. **`targetSdk = 28` 的冲突评估**：这是我们的刻意选择（保留从数据目录执行二进制的 SELinux 权限），
+   与平台/F-Droid 对较新 targetSdk 的期待正面冲突，需评估替代方案（proot/bubblewrap 路线）
+5. 若走 F-Droid：**bionic Node 的源码构建配方**（Termux 自述约 2 小时，可能顶满 F-Droid 默认 `timeout: 7200`，
+   且构建 VM 默认仅 1 CPU / 2048 MB —— 超时风险高）
+
+### 5.1 关于"不允许预编译二进制"的可选路线
 
 | # | F-Droid 要求 | 我们的现状 | 差距 / 结论 |
 |---|---|---|---|
@@ -135,6 +186,23 @@ F-Droid 不是"传个 APK 上去"，它的收录有明确政策。逐条对照�
 
 ---
 
+## 5.5 分发策略：a/b/c 组合（所有者确认"三个都要"）
+
+| 代号 | 内容 | 时间 | 依赖 |
+|---|---|---|---|
+| **(c)** | 合规清洁：许可证口径、NOTICE、可复现构建、wrapper、仓库顺序 | **现在** | 只依赖我们自己 |
+| **(b)** | 自签 + GitHub Release / Obtainium 分发 | 立刻见效 | 零基础设施、零批准 |
+| **(a)** | F-Droid 主仓库：**源码构建配方 + Reproducible Builds** | 中长期 | 2–6 人周（配方）+ 3–8 人周（RB），且受构建机超时/CPU 限制 |
+
+**顺序建议**：先 (c) → 再以 (b) 为现实基本盘 → (a) 作为目标并行推进。
+
+**为什么 (a) 必须包含 RB**：因为我们同时要"自己签名分发"（(b)）和"上 F-Droid"（(a)）。
+没有 RB，这两条渠道的签名不同 → 用户无法跨渠道更新。**所以在本组合下 RB 从"可选"变成"必须"。**
+
+**主渠道决策点**：第一个对外分发的 APK 决定了用户能否平滑升级，因此**必须在首次分发前定下主渠道**。
+（当前判断：**尚无用户**，因此还来得及；一旦开始分发即锁定。）
+
+---
 ## 6. 每次发布的检查清单
 
 **门槛（必须先全部完成）**
