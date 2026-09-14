@@ -12,6 +12,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     complete: (agentId: SessionId, ref: GoalRef) => Promise<RemoteResult<GoalView>>
     create: (agentId: SessionId, request: CreateGoalRequest) => Promise<RemoteResult<CreateGoalResult>>
     edit: (agentId: SessionId, ref: GoalRef, request: EditGoalRequest) => Promise<RemoteResult<GoalView>>
+    get: (agentId: SessionId) => Promise<RemoteResult<GoalView | undefined>>
     pause: (agentId: SessionId, ref: GoalRef) => Promise<RemoteResult<GoalView>>
     resume: (agentId: SessionId, ref: GoalRef) => Promise<RemoteResult<GoalView>>
   }
@@ -20,6 +21,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'goals/complete': (agentId: SessionId, ref: GoalRef) => Promise<RemoteResult<GoalView>>
     'goals/create': (agentId: SessionId, request: CreateGoalRequest) => Promise<RemoteResult<CreateGoalResult>>
     'goals/edit': (agentId: SessionId, ref: GoalRef, request: EditGoalRequest) => Promise<RemoteResult<GoalView>>
+    'goals/get': (agentId: SessionId) => Promise<RemoteResult<GoalView | undefined>>
     'goals/pause': (agentId: SessionId, ref: GoalRef) => Promise<RemoteResult<GoalView>>
     'goals/resume': (agentId: SessionId, ref: GoalRef) => Promise<RemoteResult<GoalView>>
   }
@@ -31,6 +33,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
     'agent:goals/complete': (ref: GoalRef) => Promise<RemoteResult<GoalView>>
     'agent:goals/create': (request: CreateGoalRequest) => Promise<RemoteResult<CreateGoalResult>>
     'agent:goals/edit': (ref: GoalRef, request: EditGoalRequest) => Promise<RemoteResult<GoalView>>
+    'agent:goals/get': () => Promise<RemoteResult<GoalView | undefined>>
     'agent:goals/pause': (ref: GoalRef) => Promise<RemoteResult<GoalView>>
     'agent:goals/resume': (ref: GoalRef) => Promise<RemoteResult<GoalView>>
   }

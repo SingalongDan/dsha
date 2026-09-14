@@ -1059,7 +1059,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					registerHost: (key, adapter) => this.registerHost(ctx, key, adapter),
 					configureHost: (key, resolver) => this.configureHost(ctx, key, resolver),
 					registerClient: (key, adapter) => this.registerClient(ctx, key, adapter),
-					identifyHost: (context) => this.identifyHost(context),
 					getHost: (key) => this.getHost(key),
 					getClient: (key) => this.clients.get(key)?.provider,
 					subscribe: (listener) => this.changes.subscribe(ctx, listener)
@@ -1073,22 +1072,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				return {
 					wire: adapter.wire,
 					wireTypeSymbol: adapter.wireTypeSymbol,
-					identity: (context) => adapter.identity(context),
 					resolve: (id) => resolver.resolve(id)
 				};
-			}
-			identifyHost(ctx) {
-				let match;
-				for (const key of this.hosts.keys()) {
-					const identity = this.getHost(key)?.identity(ctx);
-					if (identity === void 0) continue;
-					if (match !== void 0) throw new Error(`typert: Host Context is recognized by both ${JSON.stringify(match.kind)} and ${JSON.stringify(key)}`);
-					match = {
-						kind: key,
-						identity
-					};
-				}
-				return match;
 			}
 			configureHost(ctx, key, resolver) {
 				validateSegment("Context key", key);

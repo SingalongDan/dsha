@@ -1,8 +1,9 @@
 import { z } from "zod";
+import { assistantStreamFirstTokenTime } from "@deepseek-ai/dsh-llm";
 //#region lib/types/projection.js
 /**
 * The `sessionStats` projection unit: a pure fold of step boundaries, stream
-* chunks, tool pairs, and assembled assistant messages into whole-log counts
+* embedded streams, tool pairs, and assembled assistant messages into whole-log counts
 * and wall times.
 *
 * `step/end` — not `assistant/message` — is the counted step event because it
@@ -24,15 +25,6 @@ import { z } from "zod";
 *
 * @module @deepseek-ai/dsh-session-stats/projection
 */
-/** Whether a stream chunk carries a non-empty first-token delta. */
-function isTokenDelta(chunk) {
-	switch (chunk.type) {
-		case "text-delta":
-		case "reasoning-delta": return chunk.text !== "";
-		case "tool-call-delta": return chunk.argumentsDelta !== "" || chunk.name !== void 0;
-		default: return false;
-	}
-}
 const sessionStatsSchema = z.object({
 	turns: z.number().int().nonnegative(),
 	steps: z.number().int().nonnegative(),
@@ -99,32 +91,34 @@ const sessionStatsProjectionDefinition = {
 					firstTokenTime: null
 				}
 			};
-			case "assistant/chunk": {
+			case "assistant/attempt": {
 				const open = state.openStep;
 				if (open === null || open.turn !== event.data.turn || open.step !== event.data.step) return state;
-				if (open.firstTokenTime !== null || !isTokenDelta(event.data.chunk)) return state;
+				const first = assistantStreamFirstTokenTime(event.data.stream) ?? null;
+				if (open.firstTokenTime !== null || first === null) return state;
 				return {
 					...state,
 					openStep: {
 						...open,
-						firstTokenTime: event.time
+						firstTokenTime: first
 					}
 				};
 			}
 			case "assistant/message": {
 				const open = state.openStep;
 				if (open === null || open.turn !== event.data.turn || open.step !== event.data.step) return state;
+				const firstToken = open.firstTokenTime ?? assistantStreamFirstTokenTime(event.data.stream) ?? null;
 				const next = {
 					...state,
 					llmMs: state.llmMs + Math.max(0, event.time - open.startTime),
 					openStep: null
 				};
-				if (open.firstTokenTime !== null) {
-					next.ttftMs += Math.max(0, open.firstTokenTime - open.startTime);
+				if (firstToken !== null) {
+					next.ttftMs += Math.max(0, firstToken - open.startTime);
 					next.ttftSteps += 1;
 					const outputTokens = usageOutputTokens(event.data.usage);
 					if (outputTokens !== null) {
-						next.decodeMs += Math.max(0, event.time - open.firstTokenTime);
+						next.decodeMs += Math.max(0, event.time - firstToken);
 						next.decodeTokens += outputTokens;
 					}
 				}

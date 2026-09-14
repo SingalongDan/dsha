@@ -1,6 +1,6 @@
 /**
  * The `sessionStats` projection unit: a pure fold of step boundaries, stream
- * chunks, tool pairs, and assembled assistant messages into whole-log counts
+ * embedded streams, tool pairs, and assembled assistant messages into whole-log counts
  * and wall times.
  *
  * `step/end` — not `assistant/message` — is the counted step event because it

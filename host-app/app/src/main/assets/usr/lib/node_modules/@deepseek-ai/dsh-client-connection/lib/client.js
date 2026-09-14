@@ -4,13 +4,820 @@ window.__ModuleLoader__.load({
 		var module = { exports: {} };
 		var exports = module.exports;
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-		//#region lib/types/client/connection.js
-		const CONNECTION_DEFAULTS = {
-			backoffBaseMs: 500,
-			backoffFactor: 2,
-			backoffMaxMs: 1e4,
-			generationReadyTimeoutMs: 3e3
+		//#region ../../../vendor/cosmokit/lib/index.js
+		/** Return true when a value is `null` or `undefined`. */
+		function isNullable(value) {
+			return value === null || value === void 0;
+		}
+		/** Return true for non-array object values. */
+		function isPlainObject(data) {
+			return data && typeof data === "object" && !Array.isArray(data);
+		}
+		/** Filter object entries and return a new object. */
+		function filterKeys(object, filter) {
+			return Object.fromEntries(Object.entries(object).filter(([key, value]) => filter(key, value)));
+		}
+		/** Map object values while preserving the original key set. */
+		function mapValues(object, transform) {
+			return Object.fromEntries(Object.entries(object).map(([key, value]) => [key, transform(value, key)]));
+		}
+		/** Pick selected keys from an object, optionally including `undefined` values. */
+		function pick(source, keys, forced) {
+			if (!keys) return { ...source };
+			const result = {};
+			for (const key of keys) if (forced || source[key] !== void 0) result[key] = source[key];
+			return result;
+		}
+		/** Test values using `instanceof` with a `toStringTag` fallback. */
+		function is(type, value) {
+			if (arguments.length === 1) return (value) => is(type, value);
+			return type in globalThis && value instanceof globalThis[type] || Object.prototype.toString.call(value).slice(8, -1) === type;
+		}
+		function isArrayBufferLike(value) {
+			return is("ArrayBuffer", value) || is("SharedArrayBuffer", value);
+		}
+		function isArrayBufferSource(value) {
+			return isArrayBufferLike(value) || ArrayBuffer.isView(value);
+		}
+		/** Binary source detection and base64/hex conversion helpers. */
+		var Binary;
+		(function(Binary) {
+			Binary.is = isArrayBufferLike;
+			Binary.isSource = isArrayBufferSource;
+			function fromSource(source) {
+				if (ArrayBuffer.isView(source)) return source.buffer.slice(source.byteOffset, source.byteOffset + source.byteLength);
+				else return source;
+			}
+			Binary.fromSource = fromSource;
+			function toBase64(source) {
+				source = fromSource(source);
+				if (typeof Buffer !== "undefined") return Buffer.from(source).toString("base64");
+				let binary = "";
+				const bytes = new Uint8Array(source);
+				for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+				return btoa(binary);
+			}
+			Binary.toBase64 = toBase64;
+			function fromBase64(source) {
+				if (typeof Buffer !== "undefined") return fromSource(Buffer.from(source, "base64"));
+				return Uint8Array.from(atob(source), (c) => c.charCodeAt(0));
+			}
+			Binary.fromBase64 = fromBase64;
+			function toHex(source) {
+				source = fromSource(source);
+				if (typeof Buffer !== "undefined") return Buffer.from(source).toString("hex");
+				return Array.from(new Uint8Array(source), (byte) => byte.toString(16).padStart(2, "0")).join("");
+			}
+			Binary.toHex = toHex;
+			function fromHex(source) {
+				if (typeof Buffer !== "undefined") return fromSource(Buffer.from(source, "hex"));
+				const hex = source.length % 2 === 0 ? source : source.slice(0, source.length - 1);
+				const buffer = [];
+				for (let i = 0; i < hex.length; i += 2) buffer.push(parseInt(`${hex[i]}${hex[i + 1]}`, 16));
+				return Uint8Array.from(buffer).buffer;
+			}
+			Binary.fromHex = fromHex;
+		})(Binary || (Binary = {}));
+		Binary.fromBase64;
+		Binary.toBase64;
+		Binary.fromHex;
+		Binary.toHex;
+		/** Deep-clone common JavaScript values while preserving prototypes and cycles. */
+		function clone(source, refs = /* @__PURE__ */ new Map()) {
+			if (!source || typeof source !== "object") return source;
+			if (is("Date", source)) return new Date(source.valueOf());
+			if (is("RegExp", source)) return new RegExp(source.source, source.flags);
+			if (isArrayBufferLike(source)) return source.slice(0);
+			if (ArrayBuffer.isView(source)) return source.buffer.slice(source.byteOffset, source.byteOffset + source.byteLength);
+			const cached = refs.get(source);
+			if (cached) return cached;
+			if (Array.isArray(source)) {
+				const result = [];
+				refs.set(source, result);
+				source.forEach((value, index) => {
+					result[index] = Reflect.apply(clone, null, [value, refs]);
+				});
+				return result;
+			}
+			const result = Object.create(Object.getPrototypeOf(source));
+			refs.set(source, result);
+			for (const key of Reflect.ownKeys(source)) {
+				const descriptor = { ...Reflect.getOwnPropertyDescriptor(source, key) };
+				if ("value" in descriptor) descriptor.value = Reflect.apply(clone, null, [descriptor.value, refs]);
+				Reflect.defineProperty(result, key, descriptor);
+			}
+			return result;
+		}
+		/** Deeply compare arrays, dates, regexps, buffers, and plain object fields. */
+		function deepEqual(a, b, strict) {
+			if (a === b) return true;
+			if (!strict && isNullable(a) && isNullable(b)) return true;
+			if (typeof a !== typeof b) return false;
+			if (typeof a !== "object") return false;
+			if (!a || !b) return false;
+			function check(test, then) {
+				return test(a) ? test(b) ? then(a, b) : false : test(b) ? false : void 0;
+			}
+			return check(Array.isArray, (a, b) => a.length === b.length && a.every((item, index) => deepEqual(item, b[index]))) ?? check(is("Date"), (a, b) => a.valueOf() === b.valueOf()) ?? check(is("RegExp"), (a, b) => a.source === b.source && a.flags === b.flags) ?? check(isArrayBufferLike, (a, b) => {
+				if (a.byteLength !== b.byteLength) return false;
+				const viewA = new Uint8Array(a);
+				const viewB = new Uint8Array(b);
+				for (let i = 0; i < viewA.length; i++) if (viewA[i] !== viewB[i]) return false;
+				return true;
+			}) ?? Object.keys({
+				...a,
+				...b
+			}).every((key) => deepEqual(a[key], b[key], strict));
+		}
+		/** Time constants plus parsing and formatting helpers. */
+		var Time;
+		(function(Time) {
+			Time.millisecond = 1;
+			Time.second = 1e3;
+			Time.minute = Time.second * 60;
+			Time.hour = Time.minute * 60;
+			Time.day = Time.hour * 24;
+			Time.week = Time.day * 7;
+			let timezoneOffset = (/* @__PURE__ */ new Date()).getTimezoneOffset();
+			function setTimezoneOffset(offset) {
+				timezoneOffset = offset;
+			}
+			Time.setTimezoneOffset = setTimezoneOffset;
+			function getTimezoneOffset() {
+				return timezoneOffset;
+			}
+			Time.getTimezoneOffset = getTimezoneOffset;
+			function getDateNumber(date = /* @__PURE__ */ new Date(), offset) {
+				if (typeof date === "number") date = new Date(date);
+				if (offset === void 0) offset = timezoneOffset;
+				return Math.floor((date.valueOf() / Time.minute - offset) / 1440);
+			}
+			Time.getDateNumber = getDateNumber;
+			function fromDateNumber(value, offset) {
+				const date = new Date(value * Time.day);
+				if (offset === void 0) offset = timezoneOffset;
+				return new Date(+date + offset * Time.minute);
+			}
+			Time.fromDateNumber = fromDateNumber;
+			const numeric = /\d+(?:\.\d+)?/.source;
+			const timeRegExp = new RegExp(`^${[
+				"w(?:eek(?:s)?)?",
+				"d(?:ay(?:s)?)?",
+				"h(?:our(?:s)?)?",
+				"m(?:in(?:ute)?(?:s)?)?",
+				"s(?:ec(?:ond)?(?:s)?)?"
+			].map((unit) => `(${numeric}${unit})?`).join("")}$`);
+			function parseTime(source) {
+				const capture = timeRegExp.exec(source);
+				if (!capture) return 0;
+				return (parseFloat(capture[1]) * Time.week || 0) + (parseFloat(capture[2]) * Time.day || 0) + (parseFloat(capture[3]) * Time.hour || 0) + (parseFloat(capture[4]) * Time.minute || 0) + (parseFloat(capture[5]) * Time.second || 0);
+			}
+			Time.parseTime = parseTime;
+			function parseDate(date) {
+				const parsed = parseTime(date);
+				if (parsed) date = Date.now() + parsed;
+				else if (/^\d{1,2}(:\d{1,2}){1,2}$/.test(date)) date = `${(/* @__PURE__ */ new Date()).toLocaleDateString()}-${date}`;
+				else if (/^\d{1,2}-\d{1,2}-\d{1,2}(:\d{1,2}){1,2}$/.test(date)) date = `${(/* @__PURE__ */ new Date()).getFullYear()}-${date}`;
+				return date ? new Date(date) : /* @__PURE__ */ new Date();
+			}
+			Time.parseDate = parseDate;
+			function format(ms) {
+				const abs = Math.abs(ms);
+				if (abs >= Time.day - Time.hour / 2) return Math.round(ms / Time.day) + "d";
+				else if (abs >= Time.hour - Time.minute / 2) return Math.round(ms / Time.hour) + "h";
+				else if (abs >= Time.minute - Time.second / 2) return Math.round(ms / Time.minute) + "m";
+				else if (abs >= Time.second) return Math.round(ms / Time.second) + "s";
+				return ms + "ms";
+			}
+			Time.format = format;
+			function toDigits(source, length = 2) {
+				return source.toString().padStart(length, "0");
+			}
+			Time.toDigits = toDigits;
+			function template(template, time = /* @__PURE__ */ new Date()) {
+				return template.replace("yyyy", time.getFullYear().toString()).replace("yy", time.getFullYear().toString().slice(2)).replace("MM", toDigits(time.getMonth() + 1)).replace("dd", toDigits(time.getDate())).replace("hh", toDigits(time.getHours())).replace("mm", toDigits(time.getMinutes())).replace("ss", toDigits(time.getSeconds())).replace("SSS", toDigits(time.getMilliseconds(), 3));
+			}
+			Time.template = template;
+		})(Time || (Time = {}));
+		//#endregion
+		//#region ../../../vendor/schemastery/lib/index.mjs
+		const kSchema = Symbol.for("schemastery");
+		const kValidationError = Symbol.for("ValidationError");
+		globalThis.__schemastery_index__ ??= 0;
+		globalThis.__schemastery_refs__ = void 0;
+		var ValidationError = class extends TypeError {
+			options;
+			name = "ValidationError";
+			constructor(message, options) {
+				let prefix = "$";
+				for (const segment of options.path || []) if (typeof segment === "string") prefix += "." + segment;
+				else if (typeof segment === "number") prefix += "[" + segment + "]";
+				else if (typeof segment === "symbol") prefix += `[Symbol(${segment.toString()})]`;
+				if (prefix.startsWith(".")) prefix = prefix.slice(1);
+				super((prefix === "$" ? "" : `${prefix} `) + message);
+				this.options = options;
+			}
+			static is(error) {
+				return !!error?.[kValidationError];
+			}
 		};
+		Object.defineProperty(ValidationError.prototype, kValidationError, { value: true });
+		const Schema = function(options) {
+			const schema = function(data, options = {}) {
+				return Schema.resolve(data, schema, options)[0];
+			};
+			if (options.refs) {
+				const refs = mapValues(options.refs, (options) => new Schema(options));
+				const getRef = (uid) => refs[uid];
+				for (const key in refs) {
+					const options = refs[key];
+					options.sKey = getRef(options.sKey);
+					options.inner = getRef(options.inner);
+					options.list = options.list && options.list.map(getRef);
+					options.dict = options.dict && mapValues(options.dict, getRef);
+				}
+				return refs[options.uid];
+			}
+			Object.assign(schema, options);
+			if (typeof schema.callback === "string") try {
+				schema.callback = new Function("return " + schema.callback)();
+			} catch {}
+			Object.defineProperty(schema, "uid", { value: globalThis.__schemastery_index__++ });
+			Object.setPrototypeOf(schema, Schema.prototype);
+			schema.meta ||= {};
+			schema.toString = schema.toString.bind(schema);
+			return schema;
+		};
+		Schema.prototype = Object.create(Function.prototype);
+		Schema.prototype[kSchema] = true;
+		Object.defineProperty(Schema.prototype, "~standard", { get() {
+			return {
+				version: 1,
+				vendor: "schemastery",
+				validate: (value) => {
+					try {
+						return { value: Schema.resolve(value, this, {})[0] };
+					} catch (error) {
+						if (ValidationError.is(error)) return { issues: [{
+							message: error.message,
+							path: error.options.path
+						}] };
+						throw error;
+					}
+				}
+			};
+		} });
+		Schema.ValidationError = ValidationError;
+		Schema.prototype.toJSON = function toJSON() {
+			if (globalThis.__schemastery_refs__) {
+				globalThis.__schemastery_refs__[this.uid] ??= JSON.parse(JSON.stringify({ ...this }));
+				return this.uid;
+			}
+			globalThis.__schemastery_refs__ = { [this.uid]: { ...this } };
+			globalThis.__schemastery_refs__[this.uid] = JSON.parse(JSON.stringify({ ...this }));
+			const result = {
+				uid: this.uid,
+				refs: globalThis.__schemastery_refs__
+			};
+			globalThis.__schemastery_refs__ = void 0;
+			return result;
+		};
+		Schema.prototype.set = function set(key, value) {
+			this.dict[key] = value;
+			return this;
+		};
+		Schema.prototype.push = function push(value) {
+			this.list.push(value);
+			return this;
+		};
+		function mergeDesc(original, messages) {
+			const result = typeof original === "string" ? { "": original } : { ...original };
+			for (const locale in messages) {
+				const value = messages[locale];
+				if (value?.$description || value?.$desc) result[locale] = value.$description || value.$desc;
+				else if (typeof value === "string") result[locale] = value;
+			}
+			return result;
+		}
+		function getInner(value) {
+			return value?.$value ?? value?.$inner;
+		}
+		function extractKeys(data) {
+			return filterKeys(data ?? {}, (key) => !key.startsWith("$"));
+		}
+		Schema.prototype.i18n = function i18n(messages) {
+			const schema = Schema(this);
+			const desc = mergeDesc(schema.meta.description, messages);
+			if (Object.keys(desc).length) schema.meta.description = desc;
+			if (schema.dict) schema.dict = mapValues(schema.dict, (inner, key) => {
+				return inner.i18n(mapValues(messages, (data) => getInner(data)?.[key] ?? data?.[key]));
+			});
+			if (schema.list) schema.list = schema.list.map((inner, index) => {
+				return inner.i18n(mapValues(messages, (data = {}) => {
+					if (Array.isArray(getInner(data))) return getInner(data)[index];
+					if (Array.isArray(data)) return data[index];
+					return extractKeys(data);
+				}));
+			});
+			if (schema.inner) schema.inner = schema.inner.i18n(mapValues(messages, (data) => {
+				if (getInner(data)) return getInner(data);
+				return extractKeys(data);
+			}));
+			if (schema.sKey) schema.sKey = schema.sKey.i18n(mapValues(messages, (data) => data?.$key));
+			return schema;
+		};
+		Schema.prototype.extra = function extra(key, value) {
+			const schema = Schema(this);
+			schema.meta = {
+				...schema.meta,
+				[key]: value
+			};
+			return schema;
+		};
+		for (const key of [
+			"required",
+			"disabled",
+			"collapse",
+			"hidden",
+			"loose"
+		]) Object.assign(Schema.prototype, { [key](value = true) {
+			const schema = Schema(this);
+			schema.meta = {
+				...schema.meta,
+				[key]: value
+			};
+			return schema;
+		} });
+		Schema.prototype.deprecated = function deprecated() {
+			const schema = Schema(this);
+			schema.meta.badges ||= [];
+			schema.meta.badges.push({
+				text: "deprecated",
+				type: "danger"
+			});
+			return schema;
+		};
+		Schema.prototype.experimental = function experimental() {
+			const schema = Schema(this);
+			schema.meta.badges ||= [];
+			schema.meta.badges.push({
+				text: "experimental",
+				type: "warning"
+			});
+			return schema;
+		};
+		Schema.prototype.pattern = function pattern(regexp) {
+			const schema = Schema(this);
+			const pattern = pick(regexp, ["source", "flags"]);
+			schema.meta = {
+				...schema.meta,
+				pattern
+			};
+			return schema;
+		};
+		Schema.prototype.simplify = function simplify(value) {
+			if (deepEqual(value, this.meta.default, this.type === "dict")) return null;
+			if (isNullable(value)) return value;
+			if (this.type === "object" || this.type === "dict") {
+				const result = {};
+				for (const key in value) {
+					const item = (this.type === "object" ? this.dict[key] : this.inner)?.simplify(value[key]);
+					if (this.type === "dict" || !isNullable(item)) result[key] = item;
+				}
+				if (deepEqual(result, this.meta.default, this.type === "dict")) return null;
+				return result;
+			} else if (this.type === "array" || this.type === "tuple") {
+				const result = [];
+				value.forEach((value, index) => {
+					const schema = this.type === "array" ? this.inner : this.list[index];
+					const item = schema ? schema.simplify(value) : value;
+					result.push(item);
+				});
+				return result;
+			} else if (this.type === "intersect") {
+				const result = {};
+				for (const item of this.list) Object.assign(result, item.simplify(value));
+				return result;
+			} else if (this.type === "union") for (const schema of this.list) try {
+				Schema.resolve(value, schema, {});
+				return schema.simplify(value);
+			} catch {}
+			return value;
+		};
+		Schema.prototype.toString = function toString(inline) {
+			return formatters[this.type]?.(this, inline) ?? `Schema<${this.type}>`;
+		};
+		Schema.prototype.role = function role(role, extra) {
+			const schema = Schema(this);
+			schema.meta = {
+				...schema.meta,
+				role,
+				extra
+			};
+			return schema;
+		};
+		for (const key of [
+			"default",
+			"link",
+			"comment",
+			"description",
+			"max",
+			"min",
+			"step"
+		]) Object.assign(Schema.prototype, { [key](value) {
+			const schema = Schema(this);
+			schema.meta = {
+				...schema.meta,
+				[key]: value
+			};
+			return schema;
+		} });
+		const resolvers = {};
+		Schema.extend = function extend(type, resolve) {
+			resolvers[type] = resolve;
+		};
+		Schema.resolve = function resolve(data, schema, options = {}, strict = false) {
+			if (!schema) return [data];
+			if (options.ignore?.(data, schema)) return [data];
+			if (isNullable(data) && schema.type !== "lazy") {
+				if (schema.meta.required) throw new ValidationError(`missing required value`, options);
+				let current = schema;
+				let fallback = schema.meta.default;
+				while (current?.type === "intersect" && isNullable(fallback)) {
+					current = current.list[0];
+					fallback = current?.meta.default;
+				}
+				if (isNullable(fallback)) return [data];
+				data = clone(fallback);
+			}
+			const callback = resolvers[schema.type];
+			if (!callback) throw new ValidationError(`unsupported type "${schema.type}"`, options);
+			try {
+				return callback(data, schema, options, strict);
+			} catch (error) {
+				if (!schema.meta.loose) throw error;
+				return [schema.meta.default];
+			}
+		};
+		Schema.from = function from(source) {
+			if (isNullable(source)) return Schema.any();
+			else if ([
+				"string",
+				"number",
+				"boolean"
+			].includes(typeof source)) return Schema.const(source).required();
+			else if (source[kSchema]) return source;
+			else if (typeof source === "function") switch (source) {
+				case String: return Schema.string().required();
+				case Number: return Schema.number().required();
+				case Boolean: return Schema.boolean().required();
+				case Function: return Schema.function().required();
+				default: return Schema.is(source).required();
+			}
+			else throw new TypeError(`cannot infer schema from ${source}`);
+		};
+		Schema.lazy = function lazy(builder) {
+			const toJSON = () => {
+				if (!schema.inner[kSchema]) {
+					schema.inner = schema.builder();
+					schema.inner.meta = {
+						...schema.meta,
+						...schema.inner.meta
+					};
+				}
+				return schema.inner.toJSON();
+			};
+			const schema = new Schema({
+				type: "lazy",
+				builder,
+				inner: { toJSON }
+			});
+			return schema;
+		};
+		Schema.natural = function natural() {
+			return Schema.number().step(1).min(0);
+		};
+		Schema.percent = function percent() {
+			return Schema.number().step(.01).min(0).max(1).role("slider");
+		};
+		Schema.date = function date() {
+			return Schema.union([Schema.is(Date), Schema.transform(Schema.string().role("datetime"), (value, options) => {
+				const date = new Date(value);
+				if (isNaN(+date)) throw new ValidationError(`invalid date "${value}"`, options);
+				return date;
+			}, true)]);
+		};
+		Schema.regExp = function regExp(flag = "") {
+			return Schema.union([Schema.is(RegExp), Schema.transform(Schema.string().role("regexp", { flag }), (value, options) => {
+				try {
+					return new RegExp(value, flag);
+				} catch (e) {
+					throw new ValidationError(e.message, options);
+				}
+			}, true)]);
+		};
+		Schema.arrayBuffer = function arrayBuffer(encoding) {
+			return Schema.union([
+				Schema.is(ArrayBuffer),
+				Schema.is(SharedArrayBuffer),
+				Schema.transform(Schema.any(), (value, options) => {
+					if (Binary.isSource(value)) return Binary.fromSource(value);
+					throw new ValidationError(`expected ArrayBufferSource but got ${value}`, options);
+				}, true),
+				...encoding ? [Schema.transform(Schema.string(), (value, options) => {
+					try {
+						return encoding === "base64" ? Binary.fromBase64(value) : Binary.fromHex(value);
+					} catch (e) {
+						throw new ValidationError(e.message, options);
+					}
+				}, true)] : []
+			]);
+		};
+		Schema.extend("lazy", (data, schema, options, strict) => {
+			if (!schema.inner[kSchema]) {
+				schema.inner = schema.builder();
+				schema.inner.meta = {
+					...schema.meta,
+					...schema.inner.meta
+				};
+			}
+			return Schema.resolve(data, schema.inner, options, strict);
+		});
+		Schema.extend("any", (data) => {
+			return [data];
+		});
+		Schema.extend("never", (data, _, options) => {
+			throw new ValidationError(`expected nullable but got ${data}`, options);
+		});
+		Schema.extend("const", (data, { value }, options) => {
+			if (deepEqual(data, value)) return [value];
+			throw new ValidationError(`expected ${value} but got ${data}`, options);
+		});
+		function checkWithinRange(data, meta, description, options, skipMin = false) {
+			const { max = Infinity, min = -Infinity } = meta;
+			if (data > max) throw new ValidationError(`expected ${description} <= ${max} but got ${data}`, options);
+			if (data < min && !skipMin) throw new ValidationError(`expected ${description} >= ${min} but got ${data}`, options);
+		}
+		Schema.extend("string", (data, { meta }, options) => {
+			if (typeof data !== "string") throw new ValidationError(`expected string but got ${data}`, options);
+			if (meta.pattern) {
+				const regexp = new RegExp(meta.pattern.source, meta.pattern.flags);
+				if (!regexp.test(data)) throw new ValidationError(`expect string to match regexp ${regexp}`, options);
+			}
+			checkWithinRange(data.length, meta, "string length", options);
+			return [data];
+		});
+		function decimalShift(data, digits) {
+			const str = data.toString();
+			if (str.includes("e")) return data * Math.pow(10, digits);
+			const index = str.indexOf(".");
+			if (index === -1) return data * Math.pow(10, digits);
+			const frac = str.slice(index + 1);
+			const integer = str.slice(0, index);
+			if (frac.length <= digits) return +(integer + frac.padEnd(digits, "0"));
+			return +(integer + frac.slice(0, digits) + "." + frac.slice(digits));
+		}
+		function isMultipleOf(data, min, step) {
+			step = Math.abs(step);
+			if (!/^\d+\.\d+$/.test(step.toString())) return (data - min) % step === 0;
+			const index = step.toString().indexOf(".");
+			const digits = step.toString().slice(index + 1).length;
+			return Math.abs(decimalShift(data, digits) - decimalShift(min, digits)) % decimalShift(step, digits) === 0;
+		}
+		Schema.extend("number", (data, { meta }, options) => {
+			if (typeof data !== "number") throw new ValidationError(`expected number but got ${data}`, options);
+			checkWithinRange(data, meta, "number", options);
+			const { step } = meta;
+			if (step && !isMultipleOf(data, meta.min ?? 0, step)) throw new ValidationError(`expected number multiple of ${step} but got ${data}`, options);
+			return [data];
+		});
+		Schema.extend("boolean", (data, _, options) => {
+			if (typeof data === "boolean") return [data];
+			throw new ValidationError(`expected boolean but got ${data}`, options);
+		});
+		Schema.extend("bitset", (data, { bits, meta }, options) => {
+			let value = 0, keys = [];
+			if (typeof data === "number") {
+				value = data;
+				for (const key in bits) if (data & bits[key]) keys.push(key);
+			} else if (Array.isArray(data)) {
+				keys = data;
+				for (const key of keys) {
+					if (typeof key !== "string") throw new ValidationError(`expected string but got ${key}`, options);
+					if (key in bits) value |= bits[key];
+				}
+			} else throw new ValidationError(`expected number or array but got ${data}`, options);
+			if (value === meta.default) return [value];
+			return [value, keys];
+		});
+		Schema.extend("function", (data, _, options) => {
+			if (typeof data === "function") return [data];
+			throw new ValidationError(`expected function but got ${data}`, options);
+		});
+		Schema.extend("is", (data, { constructor }, options) => {
+			if (typeof constructor === "function") {
+				if (data instanceof constructor) return [data];
+				throw new ValidationError(`expected ${constructor.name} but got ${data}`, options);
+			} else {
+				if (isNullable(data)) throw new ValidationError(`expected ${constructor} but got ${data}`, options);
+				let prototype = Object.getPrototypeOf(data);
+				while (prototype) {
+					if (prototype.constructor?.name === constructor) return [data];
+					prototype = Object.getPrototypeOf(prototype);
+				}
+				throw new ValidationError(`expected ${constructor} but got ${data}`, options);
+			}
+		});
+		function property(data, key, schema, options) {
+			try {
+				const [value, adapted] = Schema.resolve(data[key], schema, {
+					...options,
+					path: [...options.path || [], key]
+				});
+				if (adapted !== void 0) data[key] = adapted;
+				return value;
+			} catch (e) {
+				if (!options?.autofix) throw e;
+				delete data[key];
+				return schema.meta.default;
+			}
+		}
+		Schema.extend("array", (data, { inner, meta }, options) => {
+			if (!Array.isArray(data)) throw new ValidationError(`expected array but got ${data}`, options);
+			checkWithinRange(data.length, meta, "array length", options, !isNullable(inner.meta.default));
+			return [data.map((_, index) => property(data, index, inner, options))];
+		});
+		Schema.extend("dict", (data, { inner, sKey }, options, strict) => {
+			if (!isPlainObject(data)) throw new ValidationError(`expected object but got ${data}`, options);
+			const result = {};
+			for (const key in data) {
+				let rKey;
+				try {
+					rKey = Schema.resolve(key, sKey, options)[0];
+				} catch (error) {
+					if (strict) continue;
+					throw error;
+				}
+				result[rKey] = property(data, key, inner, options);
+				data[rKey] = data[key];
+				if (key !== rKey) delete data[key];
+			}
+			return [result];
+		});
+		Schema.extend("tuple", (data, { list }, options, strict) => {
+			if (!Array.isArray(data)) throw new ValidationError(`expected array but got ${data}`, options);
+			const result = list.map((inner, index) => property(data, index, inner, options));
+			if (strict) return [result];
+			result.push(...data.slice(list.length));
+			return [result];
+		});
+		function merge(result, data) {
+			for (const key in data) {
+				if (key in result) continue;
+				result[key] = data[key];
+			}
+		}
+		Schema.extend("object", (data, { dict }, options, strict) => {
+			if (!isPlainObject(data)) throw new ValidationError(`expected object but got ${data}`, options);
+			const result = {};
+			for (const key in dict) {
+				const value = property(data, key, dict[key], options);
+				if (!isNullable(value) || key in data) result[key] = value;
+			}
+			if (!strict) merge(result, data);
+			return [result];
+		});
+		Schema.extend("union", (data, { list, toString }, options, strict) => {
+			const messages = [];
+			for (const inner of list) try {
+				return Schema.resolve(data, inner, options, strict);
+			} catch (error) {
+				messages.push(error);
+			}
+			throw new ValidationError(`expected ${toString()} but got ${JSON.stringify(data)}`, options);
+		});
+		Schema.extend("intersect", (data, { list, toString }, options, strict) => {
+			if (!list.length) return [data];
+			let result;
+			for (const inner of list) {
+				const value = Schema.resolve(data, inner, options, true)[0];
+				if (isNullable(value)) continue;
+				if (isNullable(result)) result = value;
+				else if (typeof result !== typeof value) throw new ValidationError(`expected ${toString()} but got ${JSON.stringify(data)}`, options);
+				else if (typeof value === "object") merge(result ??= {}, value);
+				else if (result !== value) throw new ValidationError(`expected ${toString()} but got ${JSON.stringify(data)}`, options);
+			}
+			if (!strict && isPlainObject(data)) merge(result, data);
+			return [result];
+		});
+		Schema.extend("transform", (data, { inner, callback, preserve }, options) => {
+			const [result, adapted = data] = Schema.resolve(data, inner, options, true);
+			if (preserve) return [callback(result)];
+			else return [callback(result), callback(adapted)];
+		});
+		const formatters = {};
+		function defineMethod(name, keys, format) {
+			formatters[name] = format;
+			Object.assign(Schema, { [name](...args) {
+				const schema = new Schema({ type: name });
+				keys.forEach((key, index) => {
+					switch (key) {
+						case "sKey":
+							schema.sKey = args[index] ?? Schema.string();
+							break;
+						case "inner":
+							schema.inner = Schema.from(args[index]);
+							break;
+						case "list":
+							schema.list = args[index].map(Schema.from);
+							break;
+						case "dict":
+							schema.dict = mapValues(args[index], Schema.from);
+							break;
+						case "bits":
+							schema.bits = {};
+							for (const key in args[index]) {
+								if (typeof args[index][key] !== "number") continue;
+								schema.bits[key] = args[index][key];
+							}
+							break;
+						case "callback": {
+							const callback = schema.callback = args[index];
+							callback["toJSON"] ||= () => callback.toString();
+							break;
+						}
+						case "constructor": {
+							const constructor = schema.constructor = args[index];
+							if (typeof constructor === "function") constructor["toJSON"] ||= () => constructor["name"];
+							break;
+						}
+						default: schema[key] = args[index];
+					}
+				});
+				if (name === "object" || name === "dict") schema.meta.default = {};
+				else if (name === "array" || name === "tuple") schema.meta.default = [];
+				else if (name === "bitset") schema.meta.default = 0;
+				return schema;
+			} });
+		}
+		defineMethod("is", ["constructor"], ({ constructor }) => {
+			if (typeof constructor === "function") return constructor.name;
+			else return constructor;
+		});
+		defineMethod("any", [], () => "any");
+		defineMethod("never", [], () => "never");
+		defineMethod("const", ["value"], ({ value }) => typeof value === "string" ? JSON.stringify(value) : value);
+		defineMethod("string", [], () => "string");
+		defineMethod("number", [], () => "number");
+		defineMethod("boolean", [], () => "boolean");
+		defineMethod("bitset", ["bits"], () => "bitset");
+		defineMethod("function", [], () => "function");
+		defineMethod("array", ["inner"], ({ inner }) => `${inner.toString(true)}[]`);
+		defineMethod("dict", ["inner", "sKey"], ({ inner, sKey }) => `{ [key: ${sKey.toString()}]: ${inner.toString()} }`);
+		defineMethod("tuple", ["list"], ({ list }) => `[${list.map((inner) => inner.toString()).join(", ")}]`);
+		defineMethod("object", ["dict"], ({ dict }) => {
+			if (Object.keys(dict).length === 0) return "{}";
+			return `{ ${Object.entries(dict).map(([key, inner]) => {
+				return `${key}${inner.meta.required ? "" : "?"}: ${inner.toString()}`;
+			}).join(", ")} }`;
+		});
+		defineMethod("union", ["list"], ({ list }, inline) => {
+			const result = list.map(({ toString: format }) => format()).join(" | ");
+			return inline ? `(${result})` : result;
+		});
+		defineMethod("intersect", ["list"], ({ list }) => {
+			return `${list.map((inner) => inner.toString(true)).join(" & ")}`;
+		});
+		defineMethod("transform", [
+			"inner",
+			"callback",
+			"preserve"
+		], ({ inner }, isInner) => inner.toString(isInner));
+		//#endregion
+		//#region lib/types/recovery-config.js
+		/** Shared validation for Host-configured and browser-local connection recovery. */
+		const MAX_TIMER_MS = 2147483647;
+		/** Schema shared by the Host plugin and the Client's recovery input parser. */
+		const ConnectionRecoveryConfigSchema = Schema.object({
+			backoffBaseMs: Schema.natural().min(1).max(MAX_TIMER_MS).default(500),
+			backoffFactor: Schema.number().min(1).max(Number.MAX_VALUE).default(2),
+			backoffMaxMs: Schema.natural().min(1).max(MAX_TIMER_MS).default(1e4),
+			generationReadyWarnMs: Schema.natural().min(1).max(MAX_TIMER_MS).default(3e3),
+			generationReadyTimeoutMs: Schema.natural().min(1).max(MAX_TIMER_MS).default(15e3)
+		});
+		/**
+		* Validate recovery input and supply every timing default before starting work.
+		* @param config - Host configuration, page bootstrap data, or direct loop options.
+		* @returns validated, complete recovery timing.
+		*/
+		function resolveConnectionConfig(config = {}) {
+			const resolved = ConnectionRecoveryConfigSchema(config);
+			if (!Number.isFinite(resolved.backoffFactor)) throw new RangeError("connection recovery backoffFactor must be finite");
+			return resolved;
+		}
+		//#endregion
+		//#region lib/types/client/connection.js
+		/** Connection generation readiness, cancellation, and continuous recovery. */
 		const MANUAL_RECONNECT = /* @__PURE__ */ new Error("connection: manual reconnect requested");
 		const NETWORK_STATE_CHANGED = /* @__PURE__ */ new Error("connection: browser network state changed");
 		function sleep(ms, signal) {
@@ -52,10 +859,7 @@ window.__ModuleLoader__.load({
 			constructor(source, sinks = {}, config = {}) {
 				this.source = source;
 				this.sinks = sinks;
-				this.config = {
-					...CONNECTION_DEFAULTS,
-					...config
-				};
+				this.config = resolveConnectionConfig(config);
 			}
 			/** Idempotent: begin the connect/pump/reconnect loop. */
 			start() {
@@ -104,10 +908,9 @@ window.__ModuleLoader__.load({
 				const cap = this.backoffCap(attempt);
 				return cap / 2 + Math.random() * (cap / 2);
 			}
-			isFinalBackoffTier(attempt) {
-				const cap = this.backoffCap(attempt);
-				const nextCap = this.backoffCap(attempt + 1);
-				return cap >= this.config.backoffMaxMs || !Number.isFinite(nextCap) || nextCap <= cap;
+			/** Re-read retry inputs after a potentially reentrant state sink. */
+			isRetryInterrupted(immediate) {
+				return this.immediateRetry || !this.networkAvailable && !immediate;
 			}
 			/** Read through a method: stop() flips the flag across awaits, so narrowing from the loop condition must not stick. */
 			isRunning() {
@@ -136,17 +939,10 @@ window.__ModuleLoader__.load({
 						this.immediateRetry = false;
 						if (immediate) this.attempt = 0;
 						manualAttempt = immediate;
-						if (!immediate && this.attempt > 0 && this.isFinalBackoffTier(this.attempt)) {
-							const retryDelay = new AbortController();
-							this.retryDelay = retryDelay;
-							this.emitState("disconnected");
-							await waitForAbort(retryDelay.signal);
-							if (this.retryDelay === retryDelay) this.retryDelay = null;
-							continue;
-						}
 						const attempt = ++this.attempt;
 						this.emitState("connecting");
 						if (!this.isRunning()) return;
+						if (this.isRetryInterrupted(immediate)) continue;
 						if (!immediate) {
 							const retryDelay = new AbortController();
 							this.retryDelay = retryDelay;
@@ -176,7 +972,7 @@ window.__ModuleLoader__.load({
 						rejectSourceLost = reject;
 					});
 					const reportReady = (host) => {
-						if (sourceReady) return;
+						if (sourceReady || gen !== this.generation || !this.isGenerationActive(ac)) return;
 						sourceReady = true;
 						resolveReady(host);
 					};
@@ -198,14 +994,16 @@ window.__ModuleLoader__.load({
 						});
 					});
 					try {
-						const host = await Promise.race([waitForReady(ready, this.config.generationReadyTimeoutMs, ac.signal), sourceLost]);
+						const host = await Promise.race([waitForReady(ready, this.config, ac.signal), sourceLost]);
 						if (ac.signal.aborted) throw new Error("generation aborted during readiness handshake");
 						this.attempt = 0;
 						this.emitState("connected");
 						if (this.isGenerationActive(ac)) this.callSink(() => {
 							this.sinks.onConnected?.(host);
 						});
-					} catch {}
+					} catch (error) {
+						if (!ac.signal.aborted) ac.abort(error);
+					}
 					await failed;
 					if (!this.isRunning()) return;
 					if (manualAttempt) this.attempt = 0;
@@ -227,19 +1025,25 @@ window.__ModuleLoader__.load({
 				}
 			}
 		};
-		/** Await source readiness while reporting, but not cancelling, a slow Host. */
-		function waitForReady(ready, timeoutMs, signal) {
+		/** Report a slow handshake before the hard deadline ends its generation. */
+		function waitForReady(ready, config, signal) {
 			return new Promise((resolve, reject) => {
 				let settled = false;
+				const warning = setTimeout(() => {
+					console.warn(`[connection] generation is still not ready after ${String(config.generationReadyWarnMs)}ms`);
+				}, config.generationReadyWarnMs);
 				const timeout = setTimeout(() => {
-					console.warn(`[connection] generation is still not ready after ${String(timeoutMs)}ms`);
-				}, timeoutMs);
+					const error = /* @__PURE__ */ new Error(`connection generation was not ready within ${String(config.generationReadyTimeoutMs)}ms`);
+					console.warn(`[connection] ${error.message}; cancelling generation`);
+					finish({ error });
+				}, config.generationReadyTimeoutMs);
 				const aborted = () => {
 					finish({ error: new Error("connection generation aborted", { cause: signal.reason }) });
 				};
 				const finish = (outcome) => {
 					if (settled) return;
 					settled = true;
+					clearTimeout(warning);
 					clearTimeout(timeout);
 					signal.removeEventListener("abort", aborted);
 					if ("error" in outcome) reject(outcome.error);
@@ -299,6 +1103,166 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region ../../util/values/lib/index.js
+		/** Duplicate-install-safe JSON and immutable-value helpers. @module @deepseek-ai/dsh-util-values */
+		/**
+		* Mark an unreachable closed-union branch.
+		* @param value - impossible value; an unhandled typed variant fails at the call site.
+		* @param context - optional switch-site label included in the failure message.
+		* @returns never; a runtime value that escaped its type always throws.
+		*/
+		function assertNever(value, context) {
+			const rendered = JSON.stringify(value) ?? String(value);
+			throw new Error(`unreachable variant${context ? ` in ${context}` : ""}: ${rendered}`);
+		}
+		/** Whether a realm-owned intrinsic prototype is backed by its native constructor. */
+		function hasIntrinsicConstructor(prototype, name) {
+			const constructor = Object.getOwnPropertyDescriptor(prototype, "constructor")?.value;
+			if (typeof constructor !== "function") return false;
+			try {
+				return constructor.name === name && constructor.prototype === prototype && Function.prototype.toString.call(constructor) === `function ${name}() { [native code] }`;
+			} catch {
+				return false;
+			}
+		}
+		/** Whether a candidate is one realm's intrinsic `Object.prototype`. */
+		function isIntrinsicObjectPrototype(value) {
+			return Object.getPrototypeOf(value) === null && hasIntrinsicConstructor(value, "Object");
+		}
+		/** Whether an array uses one realm's intrinsic `Array.prototype`, not a subclass or forged prototype. */
+		function hasPlainArrayPrototype(value) {
+			const prototype = Object.getPrototypeOf(value);
+			if (!Array.isArray(prototype) || !hasIntrinsicConstructor(prototype, "Array")) return false;
+			const objectPrototype = Object.getPrototypeOf(prototype);
+			return typeof objectPrototype === "object" && objectPrototype !== null && isIntrinsicObjectPrototype(objectPrototype);
+		}
+		/** Whether an object is a plain or null-prototype record from any JavaScript realm. */
+		function hasPlainObjectPrototype(value) {
+			const prototype = Object.getPrototypeOf(value);
+			return prototype === null || typeof prototype === "object" && isIntrinsicObjectPrototype(prototype);
+		}
+		/** Return every JSON-visible object key, or reject own data JSON would discard. */
+		function enumerableStringKeys(value) {
+			const keys = Reflect.ownKeys(value);
+			if (keys.some((key) => typeof key !== "string" || !Object.prototype.propertyIsEnumerable.call(value, key))) return void 0;
+			return keys;
+		}
+		/** Validate lossless JSON iteratively, optionally materializing a detached snapshot. */
+		function walkJsonValue(value, detach) {
+			const ancestors = /* @__PURE__ */ new Set();
+			let root;
+			const assign = (destination, item) => {
+				if (destination === void 0) return;
+				if (destination.kind === "root") root = item;
+				else if (destination.kind === "array") destination.target[destination.index] = item;
+				else Object.defineProperty(destination.target, destination.key, {
+					value: item,
+					enumerable: true,
+					configurable: true,
+					writable: true
+				});
+			};
+			const tasks = [{
+				kind: "visit",
+				value,
+				...detach ? { destination: { kind: "root" } } : {}
+			}];
+			for (let task = tasks.pop(); task !== void 0; task = tasks.pop()) {
+				if (task.kind === "leave") {
+					ancestors.delete(task.source);
+					continue;
+				}
+				if (task.kind === "array-item") {
+					if (!Object.prototype.hasOwnProperty.call(task.source, task.index)) return void 0;
+					tasks.push({
+						kind: "visit",
+						value: task.source[task.index],
+						...task.target === void 0 ? {} : { destination: {
+							kind: "array",
+							target: task.target,
+							index: task.index
+						} }
+					});
+					continue;
+				}
+				if (task.kind === "object-property") {
+					tasks.push({
+						kind: "visit",
+						value: task.source[task.key],
+						...task.target === void 0 ? {} : { destination: {
+							kind: "object",
+							target: task.target,
+							key: task.key
+						} }
+					});
+					continue;
+				}
+				const current = task.value;
+				if (current === null) {
+					assign(task.destination, null);
+					continue;
+				}
+				if (typeof current === "boolean" || typeof current === "string") {
+					assign(task.destination, current);
+					continue;
+				}
+				if (typeof current === "number") {
+					if (!Number.isFinite(current) || Object.is(current, -0)) return void 0;
+					assign(task.destination, current);
+					continue;
+				}
+				if (typeof current !== "object") return void 0;
+				if (ancestors.has(current)) return void 0;
+				if (Array.isArray(current)) {
+					if (!hasPlainArrayPrototype(current)) return void 0;
+					const length = current.length;
+					if (Reflect.ownKeys(current).length !== length + 1) return void 0;
+					const target = detach ? [] : void 0;
+					if (target !== void 0) assign(task.destination, target);
+					ancestors.add(current);
+					tasks.push({
+						kind: "leave",
+						source: current
+					});
+					for (let index = length - 1; index >= 0; index--) tasks.push({
+						kind: "array-item",
+						source: current,
+						index,
+						...target === void 0 ? {} : { target }
+					});
+					continue;
+				}
+				if (!hasPlainObjectPrototype(current)) return void 0;
+				const keys = enumerableStringKeys(current);
+				if (keys === void 0) return void 0;
+				const target = detach ? {} : void 0;
+				if (target !== void 0) assign(task.destination, target);
+				ancestors.add(current);
+				tasks.push({
+					kind: "leave",
+					source: current
+				});
+				for (let index = keys.length - 1; index >= 0; index--) {
+					const key = keys[index];
+					/* v8 ignore next -- the loop is bounded by the captured key count. */
+					if (key === void 0) return void 0;
+					tasks.push({
+						kind: "object-property",
+						source: current,
+						key,
+						...target === void 0 ? {} : { target }
+					});
+				}
+			}
+			return detach ? root : true;
+		}
+		/**
+		* Validate and detach lossless JSON in one read per property.
+		* @param value - candidate value to validate and detach.
+		* @returns the detached snapshot, or `undefined` when the value is not losslessly JSON-serializable.
+		*/
+		function snapshotJsonValue(value) {
+			return walkJsonValue(value, true);
+		}
 		/**
 		* Deep-freeze an object graph in place while leaving live AbortSignal objects mutable.
 		* @param value - value to freeze.
@@ -390,6 +1354,26 @@ window.__ModuleLoader__.load({
 			});
 		}
 		/**
+		* Create and freeze one identified system-role message holding a rendered
+		* system prompt.
+		* @param text - the complete rendered prompt; `''` records "no system prompt".
+		* @param plugin - the plugin that assembled the prompt.
+		* @returns an immutable system message with a fresh stable identity.
+		*/
+		function createSystemMessage(text, plugin) {
+			return createMessage({
+				role: "system",
+				content: text.length === 0 ? [] : [{
+					type: "text",
+					text
+				}],
+				source: {
+					kind: "plugin",
+					plugin
+				}
+			});
+		}
+		/**
 		* Create and freeze one identified tool-result message.
 		* @param input - call identity, raw result blocks, and outcome.
 		* @returns an immutable user-role tool-result message.
@@ -407,6 +1391,284 @@ window.__ModuleLoader__.load({
 					isError: input.isError
 				}]
 			});
+		}
+		//#endregion
+		//#region ../../llm/llm/lib/types/brand.js
+		/**
+		* dsh-llm's owned branded ids: tool-call correlation and provider request
+		* diagnostics.
+		*
+		* The `Branded<B>` primitive and stateless constructor live in
+		* `@deepseek-ai/dsh-brand` so every owner of a cross-boundary id can brand it
+		* without depending on dsh-llm; see that package's README for the
+		* nominal-typing policy.
+		*
+		* @module @deepseek-ai/dsh-llm/brand
+		*/
+		/**
+		* Brand one loop-owned streaming attempt identifier.
+		* @param id - the opaque Agent-lifecycle-local identifier.
+		* @returns the same string with the attempt-id brand.
+		*/
+		function LlmAttemptId(id) {
+			return brandString(id);
+		}
+		//#endregion
+		//#region ../../llm/llm/lib/types/assistant-stream.js
+		/**
+		* Lossless compact representation of one model-stream attempt, plus record-level
+		* readers that answer common consumer questions without materializing members.
+		* Readers trust the static record type; expandAssistantStream is the validating
+		* path for records read at a durable boundary.
+		*/
+		function safeTime(value) {
+			if (!Number.isSafeInteger(value)) throw new TypeError(`Assistant stream time must be a safe integer, got ${String(value)}`);
+			return value;
+		}
+		function safeIndex(value, label) {
+			if (!Number.isSafeInteger(value) || value < 0 || Object.is(value, -0)) throw new TypeError(`${label} index must be a non-negative safe integer`);
+			return value;
+		}
+		function snapshotChunk(chunk) {
+			const snapshot = snapshotJsonValue(chunk);
+			if (snapshot === void 0) throw new TypeError("Assistant stream chunk must be losslessly JSON-serializable");
+			return snapshot;
+		}
+		function safeGap(previous, next) {
+			const gap = next - previous;
+			return Number.isSafeInteger(gap) && previous + gap === next ? gap : void 0;
+		}
+		/** Incrementally compacts one attempt without retaining a second raw-chunk list. */
+		var AssistantStreamAccumulator = class {
+			records = [];
+			/**
+			* Add one timed chunk to the compact attempt stream.
+			* @param value - model chunk and its original Session timestamp.
+			* @returns a detached immutable copy for assembly and live publication.
+			*/
+			push(value) {
+				const time = safeTime(value.time);
+				const chunk = snapshotChunk(value.chunk);
+				const timed = deepFreeze({
+					time,
+					chunk
+				});
+				const previous = this.records.at(-1);
+				switch (chunk.type) {
+					case "text-delta":
+					case "reasoning-delta": {
+						safeIndex(chunk.index, chunk.type);
+						if (typeof chunk.text !== "string") throw new TypeError(`${chunk.type} text must be a string`);
+						const type = chunk.type === "text-delta" ? "text-chunks" : "reasoning-chunks";
+						const gap = previous !== void 0 && previous.type === type ? safeGap(previous.lastTime, time) : void 0;
+						if (previous !== void 0 && previous.type === type && previous.index === chunk.index && gap !== void 0) {
+							previous.dt.push(gap);
+							previous.texts.push(chunk.text);
+							previous.lastTime = time;
+						} else this.records.push({
+							type,
+							time0: time,
+							index: chunk.index,
+							dt: [],
+							texts: [chunk.text],
+							lastTime: time
+						});
+						return timed;
+					}
+					case "tool-call-delta": {
+						safeIndex(chunk.index, chunk.type);
+						if (typeof chunk.id !== "string") throw new TypeError("tool-call-delta id must be a string");
+						if (Object.hasOwn(chunk, "name") && typeof chunk.name !== "string") throw new TypeError("tool-call-delta name must be a string");
+						if (typeof chunk.argumentsDelta !== "string") throw new TypeError("tool-call-delta argumentsDelta must be a string");
+						if (chunk.id.length === 0 || chunk.name === "") {
+							this.records.push({
+								type: "chunk",
+								time,
+								chunk
+							});
+							return timed;
+						}
+						const gap = previous?.type === "tool-call-chunks" ? safeGap(previous.lastTime, time) : void 0;
+						const sameName = previous?.type === "tool-call-chunks" && Object.hasOwn(previous, "name") === Object.hasOwn(chunk, "name") && previous.name === chunk.name;
+						if (previous?.type === "tool-call-chunks" && previous.index === chunk.index && previous.id === chunk.id && sameName && gap !== void 0) {
+							previous.dt.push(gap);
+							previous.args.push(chunk.argumentsDelta);
+							previous.lastTime = time;
+						} else this.records.push({
+							type: "tool-call-chunks",
+							time0: time,
+							index: chunk.index,
+							dt: [],
+							id: chunk.id,
+							...Object.hasOwn(chunk, "name") ? { name: chunk.name } : {},
+							args: [chunk.argumentsDelta],
+							lastTime: time
+						});
+						return timed;
+					}
+					case "block-start":
+					case "block-end":
+					case "usage":
+					case "finish":
+						this.records.push({
+							type: "chunk",
+							time,
+							chunk
+						});
+						return timed;
+					default: return assertNever(chunk, "AssistantStreamAccumulator.push");
+				}
+			}
+			/**
+			* Return the current compact attempt stream.
+			* @returns a detached immutable record list suitable for a durable event.
+			*/
+			snapshot() {
+				return deepFreeze(this.records.map((record) => {
+					if (record.type === "chunk") return { ...record };
+					const { lastTime: _lastTime, ...durable } = record;
+					if (durable.type === "tool-call-chunks") return {
+						...durable,
+						dt: [...durable.dt],
+						args: [...durable.args]
+					};
+					return {
+						...durable,
+						dt: [...durable.dt],
+						texts: [...durable.texts]
+					};
+				}));
+			}
+		};
+		/**
+		* Expand compact records into the exact timed chunk sequence.
+		* @param stream - compact records from one durable Assistant settlement.
+		* @returns detached timed chunks with every original delta boundary preserved.
+		* @throws {TypeError} when a record or reconstructed timestamp is invalid.
+		*/
+		function expandAssistantStream(stream) {
+			const chunks = [];
+			for (const candidate of stream) {
+				const record = validateRecord(candidate);
+				if (record.type === "chunk") {
+					chunks.push({
+						time: record.time,
+						chunk: record.chunk
+					});
+					continue;
+				}
+				const members = record.type === "tool-call-chunks" ? record.args : record.texts;
+				let time = record.time0;
+				for (let index = 0; index < members.length; index += 1) {
+					if (index > 0) time += record.dt[index - 1];
+					let chunk;
+					if (record.type === "text-chunks") chunk = {
+						type: "text-delta",
+						index: record.index,
+						text: members[index]
+					};
+					else if (record.type === "reasoning-chunks") chunk = {
+						type: "reasoning-delta",
+						index: record.index,
+						text: members[index]
+					};
+					else chunk = {
+						type: "tool-call-delta",
+						index: record.index,
+						id: record.id,
+						...Object.hasOwn(record, "name") ? { name: record.name } : {},
+						argumentsDelta: members[index]
+					};
+					chunks.push({
+						time,
+						chunk
+					});
+				}
+			}
+			return chunks;
+		}
+		function validateRecord(value) {
+			if (typeof value !== "object" || value === null || Array.isArray(value)) throw new TypeError("Assistant stream record must be an object");
+			const record = value;
+			switch (record.type) {
+				case "text-chunks":
+				case "reasoning-chunks": {
+					exactKeys(record, [
+						"type",
+						"time0",
+						"index",
+						"dt",
+						"texts"
+					], record.type);
+					const texts = stringArray(record.texts, `${record.type} texts`);
+					if (texts.length === 0) throw new TypeError(`${record.type} texts must be non-empty`);
+					validateRun(record, texts.length, record.type);
+					return record;
+				}
+				case "tool-call-chunks": {
+					exactKeys(record, Object.hasOwn(record, "name") ? [
+						"type",
+						"time0",
+						"index",
+						"dt",
+						"id",
+						"name",
+						"args"
+					] : [
+						"type",
+						"time0",
+						"index",
+						"dt",
+						"id",
+						"args"
+					], record.type);
+					const args = stringArray(record.args, "tool-call-chunks args");
+					if (args.length === 0) throw new TypeError("tool-call-chunks args must be non-empty");
+					if (typeof record.id !== "string" || record.id.length === 0) throw new TypeError("tool-call-chunks id must be a non-empty string");
+					if (record.name !== void 0 && (typeof record.name !== "string" || record.name.length === 0)) throw new TypeError("tool-call-chunks name must be a non-empty string");
+					validateRun(record, args.length, record.type);
+					return record;
+				}
+				case "chunk": {
+					exactKeys(record, [
+						"type",
+						"time",
+						"chunk"
+					], "chunk");
+					const time = safeTime(record.time);
+					if (typeof record.chunk !== "object" || record.chunk === null || Array.isArray(record.chunk)) throw new TypeError("Assistant stream raw chunk must be a lossless JSON object");
+					let chunk;
+					try {
+						chunk = snapshotChunk(record.chunk);
+					} catch (error) {
+						throw new TypeError("Assistant stream raw chunk must be a lossless JSON object", { cause: error });
+					}
+					return deepFreeze({
+						type: "chunk",
+						time,
+						chunk
+					});
+				}
+				default: throw new TypeError(`Unsupported Assistant stream record ${JSON.stringify(record.type)}`);
+			}
+		}
+		function validateRun(record, members, label) {
+			safeTime(record.time0);
+			safeIndex(record.index, label);
+			if (!Array.isArray(record.dt) || record.dt.some((value) => !Number.isSafeInteger(value))) throw new TypeError(`${label} dt must contain safe integers`);
+			if (record.dt.length !== members - 1) throw new TypeError(`${label} dt length must be one less than its members`);
+			let time = record.time0;
+			for (const gap of record.dt) {
+				time += gap;
+				if (!Number.isSafeInteger(time)) throw new TypeError(`${label} member times must stay safe integers`);
+			}
+		}
+		function stringArray(value, label) {
+			if (!Array.isArray(value) || value.some((member) => typeof member !== "string")) throw new TypeError(`${label} must be a string array`);
+			return value;
+		}
+		function exactKeys(record, keys, label) {
+			if (Object.keys(record).length !== keys.length || !keys.every((key) => Object.hasOwn(record, key))) throw new TypeError(`${label} Assistant stream record must contain exactly ${keys.join(", ")}`);
 		}
 		//#endregion
 		//#region ../../core/session/lib/types/types.js
@@ -429,195 +1691,85 @@ window.__ModuleLoader__.load({
 			return brandNumber(value);
 		}
 		//#endregion
-		//#region ../../core/session/lib/types/chunk-rows.js
+		//#region ../../core/session/lib/types/known-event-types.js
 		/**
-		* Lossless row packing for `assistant/chunk` delta runs. Providers stream
-		* token-sized deltas, so a log stores hundreds of near-identical event lines
-		* whose JSON envelopes dwarf their payloads (~56× measured on a real DeepSeek
-		* session). This module packs each run of consecutive same-block delta chunks
-		* into ONE storage row — `text-chunks`, `reasoning-chunks`, or
-		* `tool-call-chunks` — and expands rows back to the exact original events.
-		*
-		* Packed rows are an encoding vocabulary, NOT session events: they never enter
-		* `Session.snapshotEvents()`, have no `SessionEventMap` entry, and use bare (slash-less)
-		* type tags so a reader cannot confuse them with the event taxonomy
-		* (precedent: the JSONL header line's `session` tag). Persistence and bounded
-		* history transport both use the codec. The encoder whitelists exact shapes —
-		* anything it does not fully recognize stays verbatim, so unknown fields or
-		* future chunk variants lose compression, never data. The decoder validates
-		* before expanding and fails loud on a malformed row-tagged value instead of
-		* silently dropping a whole run.
-		*
-		* @module @deepseek-ai/dsh-session/chunk-rows
+		* GENERATED by `scripts/gen-persistence-catalog.ts` — do not edit by hand; run
+		* `pnpm run gen-persistence-catalog` to regenerate (verified fresh by
+		* `pnpm run verify-persistence-catalog`, part of `doc-sync`).
+		* @module @deepseek-ai/dsh-session/known-event-types
 		*/
 		/**
-		* Test whether an encoded record is a packed chunk row rather than a Session event.
-		* @param record - one persistence or bounded-history encoding record.
-		* @returns Whether the record is a packed chunk row.
+		* Every `SessionEventMap` member declared in this repository — the event
+		* vocabulary this build understands. The persistence read path refuses to
+		* interpret a log containing a type outside this set unless the event
+		* carries the envelope's `ignorable` marker (see `SessionEvent.ignorable`
+		* in `./types.ts`): such a log was likely written by a newer harness, and
+		* silently skipping a required event would reconstruct a wrong session.
+		* Downstream (out-of-repo) plugin events are outside this list by
+		* construction. The persisted `SessionEvent.ignorable` marker is the
+		* compatibility mechanism; event-name registration was rejected because
+		* it does not classify omission safety and would make reads
+		* composition-dependent. The rationale is in
+		* `.agents/notes/implemented/architecture/2026-08-30-retain-ignorable-external-session-events.md`.
 		*/
-		function isChunkRow(record) {
-			return record.type === "text-chunks" || record.type === "reasoning-chunks" || record.type === "tool-call-chunks";
-		}
-		/**
-		* Minimum members before a run packs. Below it a row's envelope rivals the
-		* event lines it replaces. A format constant, not a tunable: both layouts
-		* decode identically, so changing it never invalidates stored logs.
-		*/
-		const MIN_RUN = 3;
-		function isRecord$1(value) {
-			return typeof value === "object" && value !== null;
-		}
-		/** Exact-key check: `value` has every key in `keys` and nothing else. */
-		function hasExactKeys(value, keys) {
-			return Object.keys(value).length === keys.length && keys.every((k) => Object.hasOwn(value, k));
-		}
-		/**
-		* Classify an event for packing: its delta kind when the ENTIRE shape
-		* (envelope, data, chunk — exact keys, primitive types, integer seq/time) is
-		* whitelisted, else `undefined` (store verbatim). Inputs come from live typed
-		* appends AND parsed fixture files, so the checks are structural, not
-		* type-trusted. Integer times keep gap encoding exact: a fractional time would
-		* reconstruct through float subtraction/addition, which need not round-trip.
-		*/
-		function classify(event) {
-			if (event.type !== "assistant/chunk") return void 0;
-			if (!hasExactKeys(event, [
-				"type",
-				"seq",
-				"time",
-				"data"
-			])) return void 0;
-			if (!Number.isSafeInteger(event.seq) || event.seq < 0 || Object.is(event.seq, -0) || !Number.isSafeInteger(event.time)) return void 0;
-			const data = event.data;
-			if (!isRecord$1(data) || !hasExactKeys(data, [
-				"turn",
-				"step",
-				"chunk"
-			])) return void 0;
-			if (typeof data.turn !== "number" || typeof data.step !== "number") return void 0;
-			const chunk = data.chunk;
-			if (!isRecord$1(chunk) || typeof chunk.index !== "number") return void 0;
-			switch (chunk.type) {
-				case "text-delta":
-				case "reasoning-delta": return hasExactKeys(chunk, [
-					"type",
-					"index",
-					"text"
-				]) && typeof chunk.text === "string" ? chunk.type : void 0;
-				case "tool-call-delta": return (hasExactKeys(chunk, [
-					"type",
-					"index",
-					"id",
-					"argumentsDelta"
-				]) || hasExactKeys(chunk, [
-					"type",
-					"index",
-					"id",
-					"name",
-					"argumentsDelta"
-				]) && typeof chunk.name === "string") && typeof chunk.id === "string" && typeof chunk.argumentsDelta === "string" ? chunk.type : void 0;
-				default: return;
-			}
-		}
-		/** The tool-call fields of a whitelisted delta chunk (only after {@link classify} returned `'tool-call-delta'`). */
-		function toolCallOf(event) {
-			return event.data.chunk;
-		}
-		/** The block index of a whitelisted delta chunk (not every {@link StreamChunk} variant carries one). */
-		function indexOf(event) {
-			return event.data.chunk.index;
-		}
-		/** Whether `next` extends a run ending in `prev` (same kind already checked by the caller). */
-		function continues(prev, next, kind) {
-			if (next.seq !== prev.seq + 1) return false;
-			if (!Number.isSafeInteger(next.time - prev.time)) return false;
-			if (next.data.turn !== prev.data.turn || next.data.step !== prev.data.step) return false;
-			if (indexOf(next) !== indexOf(prev)) return false;
-			if (kind !== "tool-call-delta") return true;
-			const a = toolCallOf(prev);
-			const b = toolCallOf(next);
-			return a.id === b.id && Object.hasOwn(a, "name") === Object.hasOwn(b, "name") && a.name === b.name;
-		}
-		/** Build the row for a completed run (`run.length >= MIN_RUN`, uniform per {@link continues}). */
-		function buildRow(kind, run) {
-			const first = run[0];
-			const base = {
-				turn: first.data.turn,
-				step: first.data.step,
-				index: indexOf(first),
-				dt: run.slice(1).map((event, i) => event.time - run[i].time)
-			};
-			const envelope = {
-				seq0: first.seq,
-				time0: first.time
-			};
-			if (kind === "tool-call-delta") {
-				const call = toolCallOf(first);
-				return {
-					type: "tool-call-chunks",
-					...envelope,
-					data: {
-						...base,
-						id: brandString(call.id),
-						...Object.hasOwn(call, "name") ? { name: call.name } : {},
-						args: run.map((event) => event.data.chunk.argumentsDelta)
-					}
-				};
-			}
-			const data = {
-				...base,
-				texts: run.map((event) => event.data.chunk.text)
-			};
-			return kind === "text-delta" ? {
-				type: "text-chunks",
-				...envelope,
-				data
-			} : {
-				type: "reasoning-chunks",
-				...envelope,
-				data
-			};
-		}
-		/**
-		* Pack an event batch for storage: each run of at least {@link MIN_RUN}
-		* consecutive whitelisted same-kind, same-block delta chunk events becomes one
-		* {@link ChunkRow}; every other event passes through verbatim, in order.
-		* Pure and stateless — safe over any array, including a batch whose runs were
-		* split by flush boundaries (the split runs simply pack per batch).
-		*
-		* @param events - the batch to encode, in log order.
-		* @returns the storage records to write, one JSONL line each.
-		*/
-		function packChunkRuns(events) {
-			const out = [];
-			let kind;
-			let run = [];
-			const flush = () => {
-				if (kind !== void 0 && run.length >= MIN_RUN) out.push(buildRow(kind, run));
-				else out.push(...run);
-				kind = void 0;
-				run = [];
-			};
-			for (const event of events) {
-				const k = classify(event);
-				if (k === void 0) {
-					flush();
-					out.push(event);
-					continue;
-				}
-				const delta = event;
-				const last = run[run.length - 1];
-				if (k === kind && last !== void 0 && continues(last, delta, k)) {
-					run.push(delta);
-					continue;
-				}
-				flush();
-				kind = k;
-				run = [delta];
-			}
-			flush();
-			return out;
-		}
+		const KNOWN_SESSION_EVENT_TYPES = new Set([
+			"agent-preset/selected",
+			"agent/inbox/spliced",
+			"approval/asked",
+			"approval/decided",
+			"approval/policy",
+			"assistant/attempt",
+			"assistant/message",
+			"command/done",
+			"command/run",
+			"compaction/end",
+			"compaction/prune",
+			"compaction/start",
+			"compaction/summary",
+			"deliverables/presented",
+			"feedback/message-delete",
+			"feedback/message-put",
+			"feedback/record",
+			"goal/change",
+			"hook/invoked",
+			"hook/result",
+			"llm/retry",
+			"llm/retry-started",
+			"model/selection",
+			"permission/preset",
+			"plan/mode",
+			"request/context",
+			"request/header",
+			"sandbox/mode",
+			"schedule/change",
+			"session-log-deepseek/delivery-accepted",
+			"session/end-seed",
+			"session/title",
+			"session/title-llm-request",
+			"step/end",
+			"step/start",
+			"subagent/catalog",
+			"subagent/descriptor",
+			"subagent/model-selection-policy",
+			"system/message",
+			"team/member",
+			"team/message/delivered",
+			"team/message/queued",
+			"team/task",
+			"todo/write",
+			"tool-workflow/agent-end",
+			"tool-workflow/agent-start",
+			"tool-workflow/run-end",
+			"tool-workflow/run-start",
+			"tool/call",
+			"tool/ptc-dispatch",
+			"tool/ptc-dispatch-start",
+			"tool/result",
+			"turn/end",
+			"turn/start",
+			"user/message",
+			"web/deepseek-search-llm-request"
+		]);
 		//#endregion
 		//#region ../../core/session/lib/types/surface.js
 		/**
@@ -631,6 +1783,7 @@ window.__ModuleLoader__.load({
 		*/
 		/** Runtime counterpart of the message-producing event union. */
 		const SURFACE_EVENT_TYPES = new Set([
+			"system/message",
 			"user/message",
 			"assistant/message",
 			"tool/result"
@@ -638,14 +1791,14 @@ window.__ModuleLoader__.load({
 		/**
 		* Whether an event type can join the model-visible surface.
 		* @param type - event type to test.
-		* @returns true for one of the three message-producing event types.
+		* @returns true for one of the four message-producing event types.
 		*/
 		function isSurfaceEligibleType(type) {
 			return SURFACE_EVENT_TYPES.has(type);
 		}
 		/**
 		* Project a single event into the LLM message it derives to, or null when it
-		* produces none — a non-surface event (chunk, boundary, log-only record) or an
+		* produces none — a non-surface event (attempt, boundary, log-only record) or an
 		* empty-content assistant/message (which exists only to host usage). This is
 		* THE per-node projection rule: `Session.deriveMessages` folds it over the
 		* live surface, external reconstructors and pure projections fold the same
@@ -659,6 +1812,7 @@ window.__ModuleLoader__.load({
 		function deriveEventMessage(event) {
 			switch (event.type) {
 				case "user/message": return event.data;
+				case "system/message":
 				case "assistant/message":
 					if (event.data.message.content.length === 0) return null;
 					return event.data.message;
@@ -680,12 +1834,13 @@ window.__ModuleLoader__.load({
 		/** Whether a runtime value is the exact positional-replacement shape. */
 		function isReplaceOp(value) {
 			const op = value;
-			return Object.keys(op).length === 3 && Object.hasOwn(op, "op") && Object.hasOwn(op, "start") && Object.hasOwn(op, "end") && op["op"] === "replace" && isEventSeq(op["start"]) && isEventSeq(op["end"]);
+			return Object.keys(op).length === 3 && Object.hasOwn(op, "op") && Object.hasOwn(op, "startSeq") && Object.hasOwn(op, "endSeq") && op["op"] === "replace" && isEventSeq(op["startSeq"]) && isEventSeq(op["endSeq"]);
 		}
 		/** Validate event-local surface eligibility and return its operation. */
 		function surfaceOpOf(event) {
 			const raw = event;
 			if (!isSurfaceEligibleType(event.type)) {
+				if (!KNOWN_SESSION_EVENT_TYPES.has(event.type) && event.ignorable === true) return;
 				if (raw.surfaceOp !== void 0) throw new Error(`session event "${event.type}" is not surface-eligible and cannot carry surfaceOp`);
 				if (raw.sourceEventSeqs !== void 0) throw new Error(`session event "${event.type}" is not surface-eligible and cannot carry sourceEventSeqs`);
 				return;
@@ -700,10 +1855,11 @@ window.__ModuleLoader__.load({
 		/** Validate cited source-event seqs against prior log entries and the replacement range. */
 		function assertProvenance(event, shadowedSeqs) {
 			const raw = event.sourceEventSeqs;
+			if (event.type === "assistant/message" && raw !== void 0) throw new Error("assistant/message embeds its source stream and cannot carry sourceEventSeqs");
 			const sources = /* @__PURE__ */ new Set();
 			if (raw !== void 0) {
 				if (!Array.isArray(raw)) throw new Error(`sourceEventSeqs on event at seq ${event.seq} must be an array when present`);
-				if (raw.length === 0 && event.type !== "assistant/message") throw new Error("sourceEventSeqs must not be empty except on assistant/message");
+				if (raw.length === 0) throw new Error("sourceEventSeqs must not be empty");
 				let nonEarlierSource;
 				for (const source of raw) {
 					if (!isEventSeq(source)) throw new Error(`session event "${event.type}" sourceEventSeqs must densely contain non-negative safe integers`);
@@ -716,13 +1872,26 @@ window.__ModuleLoader__.load({
 			const missing = shadowedSeqs.filter((seq) => !sources.has(seq));
 			if (missing.length > 0) throw new Error(`surface replace: sourceEventSeqs must include every shadowed surface node; missing ${missing.join(", ")}`);
 		}
+		/**
+		* Validate one event's surface metadata without checking membership in a log or surface.
+		* @param event - event whose marker and source sequence values are inspected.
+		* Unknown ignorable records retain opaque metadata and never change the surface.
+		* @returns the validated operation, or undefined for a log-only or unknown ignorable event.
+		* @throws when metadata violates event-local eligibility, marker, or source-sequence rules.
+		*/
+		function validateSurfaceMetadata(event) {
+			const op = surfaceOpOf(event);
+			if (op !== void 0 && op !== "append" && (op.startSeq >= event.seq || op.endSeq >= event.seq)) throw new Error(`surface replace at seq ${event.seq}: startSeq and endSeq must reference earlier events`);
+			if (op !== void 0) assertProvenance(event, []);
+			return op;
+		}
 		/** Locate one replacement range without mutating the current fold state. */
 		function replacementRange(state, op) {
-			const startIdx = state.nodes.indexOf(op.start);
-			if (startIdx === -1) throw new Error(`surface replace: start seq ${op.start} not found in surface`);
-			const endIdx = state.nodes.indexOf(op.end);
-			if (endIdx === -1) throw new Error(`surface replace: end seq ${op.end} not found in surface`);
-			if (startIdx > endIdx) throw new Error(`surface replace: start seq ${op.start} (index ${startIdx}) is after end seq ${op.end} (index ${endIdx})`);
+			const startIdx = state.nodes.indexOf(op.startSeq);
+			if (startIdx === -1) throw new Error(`surface replace: start seq ${op.startSeq} not found in surface`);
+			const endIdx = state.nodes.indexOf(op.endSeq);
+			if (endIdx === -1) throw new Error(`surface replace: end seq ${op.endSeq} not found in surface`);
+			if (startIdx > endIdx) throw new Error(`surface replace: start seq ${op.startSeq} (index ${startIdx}) is after end seq ${op.endSeq} (index ${endIdx})`);
 			return {
 				startIdx,
 				endIdx,
@@ -774,26 +1943,35 @@ window.__ModuleLoader__.load({
 				if (!isDeepEqualJson(originalRest, replacementRest)) throw new Error("tool/result surface replacement may change only content");
 			}
 		}
+		/**
+		* Protect the system prompt at surface node 0. A replacement covering node 0
+		* while that node is a `system/message` must itself be a `system/message` over
+		* exactly that node; later system nodes carry no protection and a compaction
+		* range may shadow them.
+		*/
+		function assertSystemHeadRewrite(event, state, startIdx, shadowedSeqs, events, baseSeq) {
+			if (startIdx !== 0) return;
+			if (events[state.nodes[0] - baseSeq]?.type !== "system/message") return;
+			if (event.type !== "system/message" || shadowedSeqs.length !== 1) throw new Error("surface replace: node 0 holds the system prompt and may be rewritten only by a system/message over exactly that node");
+		}
 		/** Validate one event at its replay boundary and prepare its atomic fold transition. */
 		function planSurfaceEvent(state, event, expectedSeq, events, baseSeq) {
 			if (event.seq !== expectedSeq) throw new Error(`session event seq ${event.seq} is not contiguous; expected ${expectedSeq}`);
-			const surfaceOp = surfaceOpOf(event);
+			const surfaceOp = validateSurfaceMetadata(event);
 			if (surfaceOp === void 0) return;
-			if (surfaceOp === "append") {
-				assertProvenance(event, []);
-				return {
-					kind: "append",
-					seq: event.seq
-				};
-			}
+			if (surfaceOp === "append") return {
+				kind: "append",
+				seq: event.seq
+			};
 			const range = replacementRange(state, surfaceOp);
 			assertProvenance(event, range.shadowedSeqs);
 			assertToolResultRewrite(event, range.shadowedSeqs, events, baseSeq);
+			assertSystemHeadRewrite(event, state, range.startIdx, range.shadowedSeqs, events, baseSeq);
 			return {
 				kind: "replace",
 				seq: event.seq,
-				start: surfaceOp.start,
-				end: surfaceOp.end,
+				start: surfaceOp.startSeq,
+				end: surfaceOp.endSeq,
 				...range
 			};
 		}
@@ -1173,6 +2351,45 @@ window.__ModuleLoader__.load({
 				cacheWriteTokens: turn % 10 === 0 ? 4 : 0
 			};
 		}
+		/** Build a lossless settled stream for static fixture messages. */
+		function fixtureSettledStream(message, usage, time) {
+			const stream = [];
+			for (const [index, block] of message.content.entries()) stream.push({
+				type: "chunk",
+				time,
+				chunk: {
+					type: "block-start",
+					index,
+					blockType: block.type
+				}
+			}, {
+				type: "chunk",
+				time,
+				chunk: {
+					type: "block-end",
+					index,
+					block
+				}
+			});
+			stream.push({
+				type: "chunk",
+				time,
+				chunk: {
+					type: "usage",
+					usage
+				}
+			}, {
+				type: "chunk",
+				time,
+				chunk: {
+					type: "finish",
+					reason: { kind: "stop" }
+				}
+			});
+			return stream;
+		}
+		/** Rendered system prompt of the fx-alpha history: surface node 0. */
+		const FIXTURE_SYSTEM_PROMPT = "你是 DeepSeek Harness 的 fixture 助手。用简洁的中文回答，并在需要时调用工具。";
 		/** fx-alpha history script: 75 turns (~150+ messages -> 4 pages at PAGE_MESSAGES=50),
 		*  mixing reasoning blocks / tool call+result / context. */
 		function buildAlphaLog() {
@@ -1181,16 +2398,18 @@ window.__ModuleLoader__.load({
 			const push = (e) => {
 				const seq = events.length;
 				const data = e["data"];
+				const nextTime = time + 800;
 				const authored = e["type"] === "assistant/message" && data !== void 0 ? {
 					...e,
 					data: {
 						...data,
-						usage: fixtureUsage(data["turn"], data["step"])
+						usage: fixtureUsage(data["turn"], data["step"]),
+						stream: fixtureSettledStream(data["message"], fixtureUsage(data["turn"], data["step"]), nextTime)
 					}
 				} : e;
 				events.push({
 					seq,
-					time: time += 800,
+					time: time = nextTime,
 					...authored
 				});
 				return seq;
@@ -1207,6 +2426,15 @@ window.__ModuleLoader__.load({
 				push({
 					type: "turn/start",
 					data: { turn }
+				});
+				if (turn === 0) push({
+					type: "system/message",
+					surfaceOp: "append",
+					data: {
+						turn,
+						step: 0,
+						message: createSystemMessage(FIXTURE_SYSTEM_PROMPT, "@deepseek-ai/dsh-system-prompt")
+					}
 				});
 				const userSeq = push({
 					type: "user/message",
@@ -1480,21 +2708,21 @@ window.__ModuleLoader__.load({
 				});
 				const dispatchPair = (n, name, dispatchArgs, resultText, isError = false) => {
 					push({
-						type: "tool/code-dispatch-start",
+						type: "tool/ptc-dispatch-start",
 						data: {
 							rootCallId: callId,
 							parentCallId: callId,
-							subCallId: `${callId}:code:${n}`,
+							subCallId: `${callId}:ptc:${n}`,
 							name,
 							arguments: dispatchArgs
 						}
 					});
 					push({
-						type: "tool/code-dispatch",
+						type: "tool/ptc-dispatch",
 						data: {
 							rootCallId: callId,
 							parentCallId: callId,
-							subCallId: `${callId}:code:${n}`,
+							subCallId: `${callId}:ptc:${n}`,
 							name,
 							arguments: dispatchArgs,
 							isError,
@@ -1762,11 +2990,12 @@ window.__ModuleLoader__.load({
 		}
 		/** Read one provider usage sample from either durable carrier. */
 		function usageSampleOf(event) {
-			const item = event;
-			const usage = item.type === "assistant/chunk" && item.data.chunk?.type === "usage" ? item.data.chunk.usage : item.type === "assistant/message" ? item.data.usage : void 0;
-			return usage === void 0 || item.data.turn === void 0 || item.data.step === void 0 ? void 0 : {
-				turn: item.data.turn,
-				step: item.data.step,
+			if (event.type !== "assistant/message" && event.type !== "assistant/attempt") return void 0;
+			let usage = event.type === "assistant/message" ? event.data.usage : void 0;
+			for (const member of expandAssistantStream(event.data.stream)) if (member.chunk.type === "usage") usage = member.chunk.usage;
+			return usage === void 0 ? void 0 : {
+				turn: event.data.turn,
+				step: event.data.step,
 				usage
 			};
 		}
@@ -1825,11 +3054,16 @@ window.__ModuleLoader__.load({
 						firstTokenTime: null
 					};
 					break;
-				case "assistant/chunk":
-					if (openStep !== null && openStep.turn === event.data.turn && openStep.step === event.data.step && openStep.firstTokenTime === null && isFixtureTokenDelta(event.data.chunk)) openStep.firstTokenTime = event.time;
-					break;
-				case "assistant/message":
+				case "assistant/attempt": {
 					if (openStep === null || openStep.turn !== event.data.turn || openStep.step !== event.data.step) break;
+					const first = expandAssistantStream(event.data.stream).find((member) => isFixtureTokenDelta(member.chunk))?.time;
+					if (openStep.firstTokenTime === null && first !== void 0) openStep.firstTokenTime = first;
+					break;
+				}
+				case "assistant/message": {
+					if (openStep === null || openStep.turn !== event.data.turn || openStep.step !== event.data.step) break;
+					const first = expandAssistantStream(event.data.stream).find((member) => isFixtureTokenDelta(member.chunk))?.time;
+					if (openStep.firstTokenTime === null && first !== void 0) openStep.firstTokenTime = first;
 					value.llmMs += Math.max(0, event.time - openStep.startTime);
 					if (openStep.firstTokenTime !== null) {
 						value.ttftMs += Math.max(0, openStep.firstTokenTime - openStep.startTime);
@@ -1842,6 +3076,7 @@ window.__ModuleLoader__.load({
 					}
 					openStep = null;
 					break;
+				}
 				case "tool/call":
 					pendingCalls.set(event.data.callId, event.time);
 					break;
@@ -1882,19 +3117,30 @@ window.__ModuleLoader__.load({
 				return tokens + densityPrice(JSON.stringify(block)) + BLOCK_OVERHEAD;
 			}, 0);
 		}
-		/** Fixture parallel of token-meter's heuristic context-composition projection. */
+		/**
+		* Fixture parallel of token-meter's heuristic context-composition projection.
+		* The system prompt is the system-role surface node; it prices as text plus
+		* role framing with no block overhead and stays out of the message figure.
+		*/
 		function contextBreakdownOf(log) {
 			const headerEvent = log.findLast((event) => event.type === "request/header");
 			const header = headerEvent === void 0 ? void 0 : headerEvent.data.header;
+			let systemTokens = 0;
 			let messageTokens = 0;
 			for (const seq of foldSurface(log).nodes) {
 				const event = log[seq];
 				if (event === void 0) continue;
 				const message = deriveEventMessage(event);
-				if (message !== null) messageTokens += estimateFixtureContent(message.content) + ROLE_OVERHEAD;
+				if (message === null) continue;
+				if (message.role === "system") {
+					const characters = message.content.reduce((total, block) => total + (block.type === "text" ? block.text.length : JSON.stringify(block).length), 0);
+					systemTokens = Math.ceil(characters / CHARS_PER_TOKEN) + ROLE_OVERHEAD;
+					continue;
+				}
+				messageTokens += estimateFixtureContent(message.content) + ROLE_OVERHEAD;
 			}
 			return {
-				systemTokens: header?.system === void 0 ? 0 : Math.ceil(header.system.length / CHARS_PER_TOKEN) + ROLE_OVERHEAD,
+				systemTokens,
 				toolsTokens: header?.tools === void 0 || header.tools.length === 0 ? 0 : Math.ceil(JSON.stringify(header.tools).length / CHARS_PER_TOKEN) + BLOCK_OVERHEAD,
 				messageTokens
 			};
@@ -2009,7 +3255,7 @@ window.__ModuleLoader__.load({
 				value: contextPressureOf(log),
 				seq: event.seq
 			});
-			if (type === "request/header" || type === "user/message" || type === "assistant/message" || type === "tool/result") frames.push({
+			if (type === "request/header" || type === "system/message" || type === "user/message" || type === "assistant/message" || type === "tool/result") frames.push({
 				type: "projection",
 				sessionId: id,
 				key: "contextBreakdown",
@@ -2086,41 +3332,10 @@ window.__ModuleLoader__.load({
 				}
 			}
 			return {
-				records: packChunkRuns(log.slice(start, end)).map((record) => {
-					if (!isChunkRow(record)) return {
-						type: "event",
-						event: record
-					};
-					switch (record.type) {
-						case "text-chunks": return {
-							type: "chunks",
-							event: {
-								type: "chunkrow/text-chunks",
-								seq: record.seq0,
-								time: record.time0,
-								data: record.data
-							}
-						};
-						case "reasoning-chunks": return {
-							type: "chunks",
-							event: {
-								type: "chunkrow/reasoning-chunks",
-								seq: record.seq0,
-								time: record.time0,
-								data: record.data
-							}
-						};
-						case "tool-call-chunks": return {
-							type: "chunks",
-							event: {
-								type: "chunkrow/tool-call-chunks",
-								seq: record.seq0,
-								time: record.time0,
-								data: record.data
-							}
-						};
-					}
-				}),
+				records: log.slice(start, end).map((event) => ({
+					type: "event",
+					event
+				})),
 				hasMore: start > 0
 			};
 		}
@@ -2332,6 +3547,7 @@ window.__ModuleLoader__.load({
 				}
 			];
 			const logs = new Map([[sid("fx-alpha"), buildAlphaLog()]]);
+			const goalActivations = /* @__PURE__ */ new Map();
 			const modelSelections = new Map(sessions.map((session) => [session.sessionId, {
 				provider: "deepseek-official",
 				model: "deepseek-v4-flash"
@@ -2597,6 +3813,8 @@ window.__ModuleLoader__.load({
 			];
 			const controlConns = /* @__PURE__ */ new Set();
 			const followConns = /* @__PURE__ */ new Map();
+			const activeAttempts = /* @__PURE__ */ new Map();
+			const assistantRevisions = /* @__PURE__ */ new Map();
 			const workspaceConns = /* @__PURE__ */ new Set();
 			const remoteEventConns = /* @__PURE__ */ new Map();
 			const emitControl = (frame) => {
@@ -2617,6 +3835,72 @@ window.__ModuleLoader__.load({
 			};
 			const emitFollow = (sessionId, entry) => {
 				for (const conn of followConns.get(sessionId) ?? []) conn.push(entry);
+			};
+			const emitAssistant = (sessionId, frame) => {
+				for (const conn of followConns.get(sessionId) ?? []) conn.push({
+					type: "assistant-stream",
+					frame
+				});
+			};
+			const nextAssistantRevision = (sessionId) => {
+				const revision = (assistantRevisions.get(sessionId) ?? 0) + 1;
+				assistantRevisions.set(sessionId, revision);
+				return revision;
+			};
+			const beginAssistant = (sessionId, turn, step) => {
+				const attemptId = LlmAttemptId(`${sessionId}:fixture:${String(nextAssistantRevision(sessionId))}`);
+				const lastSeq = logOf(sessionId).length - 1;
+				const startedAfterSeq = lastSeq < 0 ? -1 : SessionSeq(lastSeq);
+				const attempt = {
+					attemptId,
+					startedAfterSeq,
+					turn,
+					step,
+					stream: new AssistantStreamAccumulator(),
+					index: 0
+				};
+				activeAttempts.set(sessionId, attempt);
+				emitAssistant(sessionId, {
+					type: "start",
+					attemptId,
+					revision: assistantRevisions.get(sessionId),
+					startedAfterSeq,
+					turn,
+					step
+				});
+				return attempt;
+			};
+			const pushAssistant = (sessionId, chunk) => {
+				const attempt = activeAttempts.get(sessionId);
+				if (attempt === void 0) throw new Error(`fixture: no active Assistant attempt for ${sessionId}`);
+				const timed = attempt.stream.push({
+					time: Date.now(),
+					chunk
+				});
+				emitAssistant(sessionId, {
+					type: "chunk",
+					attemptId: attempt.attemptId,
+					revision: nextAssistantRevision(sessionId),
+					index: attempt.index++,
+					time: timed.time,
+					chunk: timed.chunk
+				});
+			};
+			const commitAssistant = (sessionId, event) => {
+				const attempt = activeAttempts.get(sessionId);
+				if (attempt === void 0) throw new Error(`fixture: no active Assistant attempt for ${sessionId}`);
+				activeAttempts.delete(sessionId);
+				emitAssistant(sessionId, {
+					type: "end",
+					attemptId: attempt.attemptId,
+					revision: nextAssistantRevision(sessionId),
+					index: attempt.index,
+					outcome: {
+						kind: "committed",
+						eventType: event.type === "assistant/message" ? "assistant/message" : "assistant/attempt",
+						seq: event.seq
+					}
+				});
 			};
 			function sessionOk(value) {
 				return Promise.resolve({
@@ -2671,6 +3955,7 @@ window.__ModuleLoader__.load({
 					if (summary !== void 0) summary.updatedAt = event.time;
 					emitRemote("api-session/activity", [id, event.time]);
 				}
+				return event;
 			};
 			/** Append one durable goal/change (host GoalService parallel). */
 			const appendGoalChange = (id, change) => {
@@ -2680,6 +3965,26 @@ window.__ModuleLoader__.load({
 					data: change
 				});
 				return backscanGoal(log);
+			};
+			/** Update process-local goal activation and publish the forwarded edge. */
+			const setGoalActivation = (id, activation) => {
+				const current = backscanGoal(logOf(id));
+				if (current === null) {
+					if (!goalActivations.delete(id)) return;
+					emitRemote("goal/activation-changed", [{ sessionId: id }]);
+					return;
+				}
+				const previous = goalActivations.get(id);
+				goalActivations.set(id, activation);
+				if (previous === activation) return;
+				emitRemote("goal/activation-changed", [{
+					sessionId: id,
+					goal: {
+						id: current.goal.id,
+						revision: current.goal.revision,
+						activation
+					}
+				}]);
 			};
 			const goalFailure = (message) => ({
 				ok: false,
@@ -2719,7 +4024,7 @@ window.__ModuleLoader__.load({
 								description: "set or view the goal for a long-running task",
 								input: {
 									hint: "<objective>",
-									images: true
+									attachments: true
 								}
 							},
 							{
@@ -2732,26 +4037,26 @@ window.__ModuleLoader__.load({
 								description: "Enter or leave plan mode",
 								input: {
 									hint: "[off|message]",
-									images: true
+									attachments: true
 								}
 							}
 						]
 					};
 				},
-				execute(id, line, images = []) {
+				execute(id, line, attachments = []) {
 					const missing = requireGoalSession(id);
 					if (missing !== void 0) return missing;
 					const match = /^\/(\S+)((?:\s.*)?)$/.exec(line.trim());
 					const name = match?.[1];
 					const args = match?.[2] ?? "";
-					if (images.length > 0 && name !== void 0 && [
+					if (attachments.length > 0 && name !== void 0 && [
 						"permission",
 						"goal",
 						"compact",
 						"echo",
 						"plan"
 					].includes(name)) {
-						const rejection = name !== "goal" && name !== "plan" ? `/${name} does not accept image attachments` : name === "goal" && args.trim() === "" ? "Image attachments only accompany a goal objective: /goal <objective> or /goal edit <objective>." : name === "plan" && args.trim() === "off" ? "Image attachments cannot accompany /plan off." : void 0;
+						const rejection = name !== "goal" && name !== "plan" ? `/${name} does not accept attachments` : name === "goal" && args.trim() === "" ? "Attachments only accompany a goal objective: /goal <objective> or /goal edit <objective>." : name === "plan" && args.trim() === "off" ? "Attachments cannot accompany /plan off." : void 0;
 						if (rejection !== void 0) {
 							const commandId = `fx-cmd-${logOf(id).length}`;
 							append(id, {
@@ -2854,21 +4159,25 @@ window.__ModuleLoader__.load({
 						let text;
 						if (objective === "") text = current === null ? "No goal is set. Usage: /goal <objective>" : `Current goal: ${current.goal.objective}`;
 						else if (current !== null && current.goal.phase !== "complete") text = `A goal already exists (${current.goal.objective}). Clear it first.`;
-						else text = `Goal created: ${appendGoalChange(id, {
-							kind: "goal/change",
-							version: 1,
-							operation: "create",
-							goal: {
-								id: `fx-goal-${logOf(id).length}`,
-								revision: 1,
-								objective,
-								phase: "active",
-								maxGoalRounds: 256
-							},
-							roundsStarted: 0,
-							createdAt: Date.now(),
-							updatedAt: Date.now()
-						}).goal.objective}`;
+						else {
+							const created = appendGoalChange(id, {
+								kind: "goal/change",
+								version: 1,
+								operation: "create",
+								goal: {
+									id: `fx-goal-${logOf(id).length}`,
+									revision: 1,
+									objective,
+									phase: "active",
+									maxGoalRounds: 256
+								},
+								roundsStarted: 0,
+								createdAt: Date.now(),
+								updatedAt: Date.now()
+							});
+							setGoalActivation(id, "armed");
+							text = `Goal created: ${created.goal.objective}`;
+						}
 						const result = {
 							kind: "success",
 							text
@@ -2936,12 +4245,12 @@ window.__ModuleLoader__.load({
 					};
 				}
 			};
-			const goalView = (projection) => ({
+			const goalView = (id, projection) => ({
 				...projection.goal,
 				roundsStarted: projection.roundsStarted,
 				createdAt: projection.createdAt,
 				updatedAt: projection.updatedAt,
-				activation: projection.goal.phase === "active" ? "armed" : "disarmed"
+				activation: goalActivations.get(id) ?? (projection.goal.phase === "active" ? "armed" : "disarmed")
 			});
 			/** Canonical fixture implementation of the generated Goal Remote contract. */
 			/** Canonical fixture implementation of the generated reference-discovery Remote contracts. */
@@ -2985,6 +4294,212 @@ window.__ModuleLoader__.load({
 								mention: `@[${label}](dsh-session:${encoded})`
 							};
 						})
+					};
+				}
+			};
+			/**
+			* Workspace text reads under `?fixture`.
+			*
+			* The sample content is deliberately more than one shape: the panel's states
+			* (text, oversized, unreadable) are only demonstrable if the fixture can
+			* produce each of them, and a preview that can only ever succeed hides its
+			* own failure rendering.
+			*/
+			const WORKSPACE_FILES_ROOT = "/tmp/fixture";
+			const workspaceFileTree = new Map([
+				["", [
+					{
+						name: ".gitignore",
+						type: "file",
+						size: 24
+					},
+					{
+						name: "dev.sock",
+						type: "other"
+					},
+					{
+						name: "notes",
+						type: "directory"
+					},
+					{
+						name: "package.json",
+						type: "file",
+						size: 512
+					},
+					{
+						name: "README.md",
+						type: "file",
+						size: 640
+					},
+					{
+						name: "src",
+						type: "directory"
+					}
+				]],
+				["notes", [{
+					name: "demo.txt",
+					type: "file",
+					size: 14
+				}, {
+					name: "new-demo.txt",
+					type: "file",
+					size: 14
+				}]],
+				["src", [
+					{
+						name: "config.ts",
+						type: "file",
+						size: 211
+					},
+					{
+						name: "index.ts",
+						type: "file",
+						size: 88
+					},
+					{
+						name: "lib",
+						type: "directory"
+					}
+				]],
+				["src/lib", Array.from({ length: 24 }, (_, index) => ({
+					name: `module-${String(index + 1).padStart(2, "0")}.ts`,
+					type: "file",
+					size: 96 + index
+				}))]
+			]);
+			/** Resolve a `list` argument to its workspace-relative path, or undefined when it leaves the root. */
+			const workspaceFilePath = (path) => {
+				const segments = [];
+				for (const segment of (path.startsWith("/") ? path : `${WORKSPACE_FILES_ROOT}/${path}`).split("/")) {
+					if (segment === "" || segment === ".") continue;
+					if (segment === "..") {
+						segments.pop();
+						continue;
+					}
+					segments.push(segment);
+				}
+				const absolute = `/${segments.join("/")}`;
+				if (absolute !== WORKSPACE_FILES_ROOT && !absolute.startsWith(`${WORKSPACE_FILES_ROOT}/`)) return void 0;
+				return absolute.slice(13);
+			};
+			const WORKSPACE_FILE_PAGE_LINES = 5e3;
+			/**
+			* Sample text for any readable path: a heading plus two lines of copy. The
+			* replayed conversation's `demo` files, and any `huge` path, run past two
+			* default pages so paging can be exercised without a real workspace.
+			*/
+			const workspaceFileLines = (path) => {
+				const head = [
+					`# ${path.slice(path.lastIndexOf("/") + 1)}`,
+					"",
+					"fixture 模式下的示例文本，用于验收侧栏的文本预览。",
+					"真实构建从工作区读取同名文件。"
+				];
+				return path.includes("demo") || path.includes("huge") ? [...head, ...Array.from({ length: 12e3 }, (_, index) => `第 ${index + 5} 行：用于验收分页与滚动的长文本样本。`)] : head;
+			};
+			const workspaceFileRemotes = {
+				list(path) {
+					if (path.length === 0) return {
+						ok: false,
+						error: {
+							code: "gateway/bad-request",
+							message: "path is required",
+							details: {}
+						}
+					};
+					const relative = workspaceFilePath(path);
+					if (relative === void 0) return {
+						ok: false,
+						error: {
+							code: "workspace-file/outside-workspace",
+							message: `${path} is outside the workspace`,
+							details: { path }
+						}
+					};
+					const entries = workspaceFileTree.get(relative);
+					if (entries === void 0) {
+						const cut = relative.lastIndexOf("/");
+						const name = relative.slice(cut + 1);
+						const sibling = workspaceFileTree.get(cut === -1 ? "" : relative.slice(0, cut))?.find((entry) => entry.name === name);
+						if (sibling === void 0) return {
+							ok: false,
+							error: {
+								code: "workspace-file/not-found",
+								message: `no entry at ${path}`,
+								details: { path }
+							}
+						};
+						return {
+							ok: false,
+							error: {
+								code: "workspace-file/not-directory",
+								message: `${path} is a ${sibling.type}`,
+								details: {
+									path,
+									kind: sibling.type === "file" ? "file" : "other"
+								}
+							}
+						};
+					}
+					return {
+						ok: true,
+						value: {
+							path: relative,
+							entries,
+							truncated: relative === "src/lib"
+						}
+					};
+				},
+				read(path, range) {
+					const located = workspaceFileRemotes.stat(path);
+					if (!located.ok) return located;
+					const offset = range.offset ?? 1;
+					const limit = range.limit ?? WORKSPACE_FILE_PAGE_LINES;
+					if (!Number.isInteger(offset) || offset < 1 || !Number.isInteger(limit) || limit < 1 || limit > WORKSPACE_FILE_PAGE_LINES) return {
+						ok: false,
+						error: {
+							code: "gateway/bad-request",
+							message: "offset and limit must be positive integers within the page cap",
+							details: {}
+						}
+					};
+					const lines = workspaceFileLines(path);
+					const page = lines.slice(offset - 1, offset - 1 + limit);
+					return {
+						ok: true,
+						value: {
+							...located.value,
+							offset,
+							text: page.join("\n"),
+							lines: page.length,
+							eof: offset - 1 + limit >= lines.length
+						}
+					};
+				},
+				stat(path) {
+					if (path.length === 0) return {
+						ok: false,
+						error: {
+							code: "gateway/bad-request",
+							message: "path is required",
+							details: {}
+						}
+					};
+					if (path.endsWith(".png") || path.endsWith(".bin")) return {
+						ok: false,
+						error: {
+							code: "workspace-file/not-text",
+							message: `${path} is not UTF-8 text`,
+							details: { path }
+						}
+					};
+					return {
+						ok: true,
+						value: {
+							absolutePath: path.startsWith("/") ? path : `/${path}`,
+							version: "fx-v1",
+							bytes: new TextEncoder().encode(workspaceFileLines(path).join("\n")).byteLength
+						}
 					};
 				}
 			};
@@ -3055,6 +4570,15 @@ window.__ModuleLoader__.load({
 				}
 			};
 			const goalRemotes = {
+				get(id) {
+					const missing = requireGoalSession(id);
+					if (missing !== void 0) return missing;
+					const current = backscanGoal(logOf(id));
+					return {
+						ok: true,
+						value: current === null ? void 0 : goalView(id, current)
+					};
+				},
 				create(id, request) {
 					const missing = requireGoalSession(id);
 					if (missing !== void 0) return missing;
@@ -3076,6 +4600,7 @@ window.__ModuleLoader__.load({
 						createdAt: now,
 						updatedAt: now
 					});
+					setGoalActivation(id, "armed");
 					return {
 						ok: true,
 						value: { ref: {
@@ -3128,6 +4653,7 @@ window.__ModuleLoader__.load({
 						cleared: tombstone,
 						clearedAt: Date.now()
 					});
+					setGoalActivation(id, "disarmed");
 					return {
 						ok: true,
 						value: tombstone
@@ -3152,17 +4678,21 @@ window.__ModuleLoader__.load({
 				const current = resolved.value;
 				const goal = next(current);
 				if (goal === void 0) return goalFailure(`invalid goal transition from "${current.goal.phase}"`);
+				const currentActivation = goalActivations.get(id) ?? (current.goal.phase === "active" ? "armed" : "disarmed");
+				const activation = goal.phase === "active" ? current.goal.phase === "active" ? currentActivation : "armed" : "disarmed";
+				const projection = appendGoalChange(id, {
+					kind: "goal/change",
+					version: 1,
+					operation: goal.phase === current.goal.phase ? "edit" : goal.phase === "paused" ? "pause" : goal.phase === "active" ? "resume" : "complete",
+					goal,
+					roundsStarted: current.roundsStarted,
+					createdAt: current.createdAt,
+					updatedAt: Date.now()
+				});
+				setGoalActivation(id, activation);
 				return {
 					ok: true,
-					value: goalView(appendGoalChange(id, {
-						kind: "goal/change",
-						version: 1,
-						operation: goal.phase === current.goal.phase ? "edit" : goal.phase === "paused" ? "pause" : goal.phase === "active" ? "resume" : "complete",
-						goal,
-						roundsStarted: current.roundsStarted,
-						createdAt: current.createdAt,
-						updatedAt: Date.now()
-					}))
+					value: goalView(id, projection)
 				};
 			}
 			/** Canonical fixture implementation of the generated AgentPresets Remote contract. */
@@ -3304,6 +4834,16 @@ window.__ModuleLoader__.load({
 						}
 					});
 				},
+				/** Disarm the single active goal without a durable phase change. */
+				disarmOnlyGoal() {
+					const active = [...logs.entries()].filter(([, log]) => {
+						return backscanGoal(log)?.goal.phase === "active";
+					});
+					if (active.length !== 1) throw new Error(`fixture: expected one active goal, found ${String(active.length)}`);
+					const [session] = active;
+					if (session === void 0) return;
+					setGoalActivation(session[0], "disarmed");
+				},
 				/** Start an externally paced reasoning stream for the opt-in browser stress lane. */
 				startReasoningChunkStorm(id, chunkCount, chunksPerInterval, intervalMs) {
 					if (!Number.isSafeInteger(chunkCount) || chunkCount < 1) throw new Error("fixture: reasoning chunk count must be a positive safe integer");
@@ -3352,38 +4892,22 @@ window.__ModuleLoader__.load({
 							step: 0
 						}
 					});
-					append(sessionId, {
-						type: "assistant/chunk",
-						data: {
-							turn,
-							step: 0,
-							chunk: {
-								type: "block-start",
-								index: 0,
-								blockType: "reasoning"
-							}
-						}
+					beginAssistant(sessionId, turn, 0);
+					pushAssistant(sessionId, {
+						type: "block-start",
+						index: 0,
+						blockType: "reasoning"
 					});
 					const startedAt = Date.now();
 					const pump = () => {
 						const elapsedIntervals = Math.floor((Date.now() - startedAt) / intervalMs) + 1;
 						const due = Math.max(state.emitted + chunksPerInterval, elapsedIntervals * chunksPerInterval);
 						const end = Math.min(due, chunkCount);
-						for (let index = state.emitted; index < end; index++) {
-							const chunkText = index === chunkCount - 1 ? `\n${marker}` : index % 64 === 63 ? "推理\n" : "推理";
-							append(sessionId, {
-								type: "assistant/chunk",
-								data: {
-									turn,
-									step: 0,
-									chunk: {
-										type: "reasoning-delta",
-										index: 0,
-										text: chunkText
-									}
-								}
-							});
-						}
+						for (let index = state.emitted; index < end; index++) pushAssistant(sessionId, {
+							type: "reasoning-delta",
+							index: 0,
+							text: index === chunkCount - 1 ? `\n${marker}` : index % 64 === 63 ? "推理\n" : "推理"
+						});
 						state.emitted = end;
 						if (end < chunkCount) setTimeout(pump, intervalMs);
 						else state.emitting = false;
@@ -3424,29 +4948,16 @@ window.__ModuleLoader__.load({
 							step: 1
 						}
 					});
-					append(sessionId, {
-						type: "assistant/chunk",
-						data: {
-							turn,
-							step: 1,
-							chunk: {
-								type: "block-start",
-								index: 0,
-								blockType: "text"
-							}
-						}
+					beginAssistant(sessionId, turn, 1);
+					pushAssistant(sessionId, {
+						type: "block-start",
+						index: 0,
+						blockType: "text"
 					});
-					append(sessionId, {
-						type: "assistant/chunk",
-						data: {
-							turn,
-							step: 1,
-							chunk: {
-								type: "text-delta",
-								index: 0,
-								text: "应撤回的半截回复"
-							}
-						}
+					pushAssistant(sessionId, {
+						type: "text-delta",
+						index: 0,
+						text: "应撤回的半截回复"
 					});
 				},
 				/** Record one retry decision; the next attempt remains in the same step. */
@@ -3455,32 +4966,39 @@ window.__ModuleLoader__.load({
 					const scenario = retryScenarios.get(sessionId);
 					if (scenario === void 0) throw new Error(`fixture: no model retry scenario for ${id}`);
 					if (!scenario.stepStarted) {
-						append(sessionId, {
-							type: "assistant/chunk",
-							data: {
-								turn: scenario.turn,
-								step: 1,
-								chunk: {
-									type: "block-start",
-									index: 0,
-									blockType: "text"
-								}
-							}
+						beginAssistant(sessionId, scenario.turn, 1);
+						pushAssistant(sessionId, {
+							type: "block-start",
+							index: 0,
+							blockType: "text"
 						});
-						append(sessionId, {
-							type: "assistant/chunk",
-							data: {
-								turn: scenario.turn,
-								step: 1,
-								chunk: {
-									type: "text-delta",
-									index: 0,
-									text: `第 ${String(retry)} 次应撤回的回复`
-								}
-							}
+						pushAssistant(sessionId, {
+							type: "text-delta",
+							index: 0,
+							text: `第 ${String(retry)} 次应撤回的回复`
 						});
 						scenario.stepStarted = true;
 					}
+					const failure = {
+						code: "TRANSPORT",
+						message: "连接被重置"
+					};
+					pushAssistant(sessionId, {
+						type: "finish",
+						reason: {
+							kind: "error",
+							failure
+						}
+					});
+					const attempt = activeAttempts.get(sessionId);
+					commitAssistant(sessionId, append(sessionId, {
+						type: "assistant/attempt",
+						data: {
+							turn: scenario.turn,
+							step: 1,
+							stream: attempt.stream.snapshot()
+						}
+					}));
 					append(sessionId, {
 						type: "llm/retry",
 						data: {
@@ -3492,10 +5010,7 @@ window.__ModuleLoader__.load({
 							retry,
 							maxRetries: 2,
 							delayMs,
-							failure: {
-								code: "TRANSPORT",
-								message: "连接被重置"
-							}
+							failure
 						}
 					});
 					scenario.stepStarted = false;
@@ -3505,6 +5020,28 @@ window.__ModuleLoader__.load({
 					const sessionId = sid(id);
 					const scenario = retryScenarios.get(sessionId);
 					if (scenario === void 0) throw new Error(`fixture: no model retry scenario for ${id}`);
+					const failure = {
+						code: "TRANSPORT",
+						message: "连接被重置"
+					};
+					const active = activeAttempts.get(sessionId);
+					if (active !== void 0) {
+						pushAssistant(sessionId, {
+							type: "finish",
+							reason: {
+								kind: "error",
+								failure
+							}
+						});
+						commitAssistant(sessionId, append(sessionId, {
+							type: "assistant/attempt",
+							data: {
+								turn: scenario.turn,
+								step: 1,
+								stream: active.stream.snapshot()
+							}
+						}));
+					}
 					append(sessionId, {
 						type: "llm/retry",
 						data: {
@@ -3516,10 +5053,7 @@ window.__ModuleLoader__.load({
 							retry: 1,
 							maxRetries: 2,
 							delayMs,
-							failure: {
-								code: "TRANSPORT",
-								message: "连接被重置"
-							}
+							failure
 						}
 					});
 					append(sessionId, {
@@ -3548,27 +5082,41 @@ window.__ModuleLoader__.load({
 					const scenario = retryScenarios.get(sessionId);
 					if (scenario === void 0) throw new Error(`fixture: no model retry scenario for ${id}`);
 					retryScenarios.delete(sessionId);
-					append(sessionId, {
-						type: "assistant/chunk",
-						data: {
-							turn: scenario.turn,
-							step: 1,
-							chunk: {
-								type: "block-start",
-								index: 0,
-								blockType: "text"
-							}
+					const completed = "重试后的完整回复";
+					beginAssistant(sessionId, scenario.turn, 1);
+					pushAssistant(sessionId, {
+						type: "block-start",
+						index: 0,
+						blockType: "text"
+					});
+					pushAssistant(sessionId, {
+						type: "text-delta",
+						index: 0,
+						text: completed
+					});
+					pushAssistant(sessionId, {
+						type: "block-end",
+						index: 0,
+						block: {
+							type: "text",
+							text: completed
 						}
 					});
-					append(sessionId, {
+					pushAssistant(sessionId, {
+						type: "finish",
+						reason: { kind: "stop" }
+					});
+					const attempt = activeAttempts.get(sessionId);
+					commitAssistant(sessionId, append(sessionId, {
 						type: "assistant/message",
 						surfaceOp: "append",
 						data: {
 							turn: scenario.turn,
 							step: 1,
-							message: assistantMessage(text("重试后的完整回复"))
+							message: assistantMessage(text(completed)),
+							stream: attempt.stream.snapshot()
 						}
-					});
+					}));
 					append(sessionId, {
 						type: "step/end",
 						data: {
@@ -3611,17 +5159,11 @@ window.__ModuleLoader__.load({
 						step
 					}
 				});
-				append(id, {
-					type: "assistant/chunk",
-					data: {
-						turn,
-						step,
-						chunk: {
-							type: "block-start",
-							index: 0,
-							blockType: "text"
-						}
-					}
+				beginAssistant(id, turn, step);
+				pushAssistant(id, {
+					type: "block-start",
+					index: 0,
+					blockType: "text"
 				});
 				/* v8 ignore next -- the ?? arm needs a null match, but every fixture reply is non-empty. */
 				const pieces = replyText.match(/[\s\S]{1,6}/gu) ?? [replyText];
@@ -3629,31 +5171,35 @@ window.__ModuleLoader__.load({
 				const finish = (aborted) => {
 					replays.delete(id);
 					const done = pieces.slice(0, i).join("");
-					append(id, {
-						type: "assistant/chunk",
-						data: {
-							turn,
-							step,
-							chunk: {
-								type: "block-end",
-								index: 0,
-								block: {
-									type: "text",
-									text: done
-								}
-							}
+					pushAssistant(id, {
+						type: "block-end",
+						index: 0,
+						block: {
+							type: "text",
+							text: done
 						}
 					});
-					append(id, {
+					pushAssistant(id, {
+						type: "usage",
+						usage: fixtureUsage(turn, step)
+					});
+					if (!aborted) pushAssistant(id, {
+						type: "finish",
+						reason: { kind: "stop" }
+					});
+					const attempt = activeAttempts.get(id);
+					commitAssistant(id, append(id, {
 						type: "assistant/message",
 						surfaceOp: "append",
 						data: {
 							turn,
 							step,
-							message: assistantMessage(text(aborted ? `${done}（已中断）` : done)),
-							usage: fixtureUsage(turn, step)
+							message: assistantMessage(text(done)),
+							stream: attempt.stream.snapshot(),
+							usage: fixtureUsage(turn, step),
+							...aborted ? { interrupted: true } : {}
 						}
-					});
+					}));
 					append(id, {
 						type: "step/end",
 						data: {
@@ -3665,7 +5211,10 @@ window.__ModuleLoader__.load({
 						type: "turn/end",
 						data: {
 							turn,
-							reason: { kind: aborted ? "cancelled" : "completed" }
+							reason: aborted ? {
+								kind: "aborted",
+								reason: { kind: "user" }
+							} : { kind: "completed" }
 						}
 					});
 					setRunning(id, false);
@@ -3677,17 +5226,10 @@ window.__ModuleLoader__.load({
 						return;
 					}
 					i++;
-					append(id, {
-						type: "assistant/chunk",
-						data: {
-							turn,
-							step,
-							chunk: {
-								type: "text-delta",
-								index: 0,
-								text: piece
-							}
-						}
+					pushAssistant(id, {
+						type: "text-delta",
+						index: 0,
+						text: piece
 					});
 					replays.set(id, {
 						timer: setTimeout(tick, 80),
@@ -4102,6 +5644,30 @@ window.__ModuleLoader__.load({
 					workspaceConns.delete(conn);
 				}
 			}
+			async function* openWorkspaceFileChanges(signal) {
+				signal.throwIfAborted();
+				const conn = new FxInbox();
+				const breakNow = () => {
+					conn.breakNow();
+				};
+				streamBreakers.add(breakNow);
+				const announce = options.fileChanges ? setTimeout(() => {
+					conn.push({
+						kind: "change",
+						change: {
+							absolutePath: `${WORKSPACE_FILES_ROOT}/notes/demo.txt`,
+							version: "fx-demo-v2"
+						}
+					});
+				}, 1e3) : void 0;
+				try {
+					yield { kind: "ready" };
+					yield* conn.drain(signal);
+				} finally {
+					if (announce !== void 0) clearTimeout(announce);
+					streamBreakers.delete(breakNow);
+				}
+			}
 			async function* openRemoteEvents(signal) {
 				signal.throwIfAborted();
 				const clientId = randomUuid();
@@ -4152,11 +5718,12 @@ window.__ModuleLoader__.load({
 					yield {
 						type: "snapshot",
 						header: {
-							version: 0,
+							version: 3,
 							id: sessionId,
 							createdAt: summary.updatedAt,
 							...summary.cwd === void 0 ? {} : { cwd: summary.cwd },
 							...summary.parentSessionId === void 0 ? {} : { parentSession: summary.parentSessionId },
+							isSeeded: summary.parentSessionId !== void 0,
 							...summary.origin === void 0 ? {} : { origin: summary.origin },
 							...summary.agentPreset === void 0 ? {} : { agentPreset: summary.agentPreset }
 						},
@@ -4166,9 +5733,24 @@ window.__ModuleLoader__.load({
 						projections: {
 							asOfSeq: cursor,
 							values: projectionValuesOf(snapshot)
-						}
+						},
+						...request.assistantStream === true ? { assistantStream: {
+							revision: assistantRevisions.get(sessionId) ?? 0,
+							...activeAttempts.get(sessionId) === void 0 ? {} : { activeAttempt: {
+								attemptId: activeAttempts.get(sessionId).attemptId,
+								startedAfterSeq: activeAttempts.get(sessionId).startedAfterSeq,
+								turn: activeAttempts.get(sessionId).turn,
+								step: activeAttempts.get(sessionId).step,
+								nextIndex: activeAttempts.get(sessionId).index,
+								stream: activeAttempts.get(sessionId).stream.snapshot()
+							} }
+						} } : {}
 					};
 					for await (const frame of conn.drain(signal)) {
+						if (frame.type === "assistant-stream") {
+							yield frame;
+							continue;
+						}
 						if (frame.event.seq < nextSeq) continue;
 						if (frame.event.seq !== nextSeq) throw new Error(`fixture: session event stream skipped seq ${String(nextSeq)}`);
 						nextSeq++;
@@ -4370,6 +5952,7 @@ window.__ModuleLoader__.load({
 						case "directoryPicker/pick": return Promise.resolve(directoryPickerRemotes.pick());
 						case "directoryPicker/list": return Promise.resolve(directoryPickerRemotes.list(args.path));
 						case "directoryPicker/createDirectory": return Promise.resolve(directoryPickerRemotes.createDirectory(args.path ?? "", args.name ?? ""));
+						case "goals/get": return Promise.resolve(goalRemotes.get(sessionId));
 						case "goals/create": return Promise.resolve(goalRemotes.create(sessionId, {
 							objective: request?.objective,
 							...request?.maxGoalRounds === void 0 ? {} : { maxGoalRounds: request.maxGoalRounds }
@@ -4424,6 +6007,9 @@ window.__ModuleLoader__.load({
 							}] });
 						}
 						case "session/openWorkspacePath": return sessionOk({ opened: true });
+						case "workspaceFiles/read": return Promise.resolve(workspaceFileRemotes.read(args.path ?? "", args.range ?? {}));
+						case "workspaceFiles/stat": return Promise.resolve(workspaceFileRemotes.stat(args.path ?? ""));
+						case "workspaceFiles/list": return Promise.resolve(workspaceFileRemotes.list(args.path ?? ""));
 						case "session/canOpenWorkspacePath": return Promise.resolve({
 							ok: true,
 							value: true
@@ -4541,6 +6127,7 @@ window.__ModuleLoader__.load({
 						case "session/control": return openControl(signal);
 						case "session/follow": return openFollow(args.request, signal);
 						case "workspace/follow": return openWorkspace(signal);
+						case "workspaceFiles/changes": return openWorkspaceFileChanges(signal);
 						default: throw new Error(`fixture connection stream endpoint ${JSON.stringify(endpoint)} is unavailable`);
 					}
 				}
@@ -4562,7 +6149,8 @@ window.__ModuleLoader__.load({
 				rejectPrompt: query.get("fixturePrompt") === "reject",
 				failWorkspaceAttach: query.get("fixtureAttach") === "fail",
 				dropSessionCreateResponse: query.get("fixtureSessionCreate") === "drop-response",
-				createFrameOrder: query.get("fixtureFrames") === "workspace-first" ? "workspace-first" : "session-first"
+				createFrameOrder: query.get("fixtureFrames") === "workspace-first" ? "workspace-first" : "session-first",
+				fileChanges: query.get("fixtureFileChanges") === "demo"
 			};
 		}
 		//#endregion
@@ -4710,13 +6298,14 @@ window.__ModuleLoader__.load({
 			};
 		}
 		/**
-		* Client plugin body: pick the api by page mode and provide ctx.connection.
+		* Client plugin body: pick physical carriers by page mode and provide ctx.connection.
 		* @param ctx - client cordis context.
 		*/
 		function apply(ctx) {
 			const pageLocation = typeof location === "undefined" ? void 0 : location;
 			const fixtureRpc = pageLocation !== void 0 && new URLSearchParams(pageLocation.search).has("fixture") ? createFixtureConnectionRpc() : void 0;
 			const transport = globalThis.__DSH_TRANSPORT__;
+			const recovery = resolveConnectionConfig(globalThis.__DSH_CONNECTION_RECOVERY__);
 			const rpc = fixtureRpc ?? createWebConnectionRpc(transport?.fetch, transport?.openStream);
 			let generationSource;
 			let owner;
@@ -4808,7 +6397,10 @@ window.__ModuleLoader__.load({
 							publishState(state);
 							sinks.onStateChange?.(state);
 						}
-					}, config ?? {});
+					}, {
+						...recovery,
+						...config
+					});
 					const current = {
 						token,
 						source,

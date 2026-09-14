@@ -1,20 +1,41 @@
 /** Observable contiguous Session event window consumed by domain assemblers. */
 import { type ObservableSnapshot } from '@deepseek-ai/dsh-client-store';
+import type { LlmAttemptId, StreamChunk } from '@deepseek-ai/dsh-llm';
 import type { SessionEvent } from '@deepseek-ai/dsh-session/types';
-import type { ChunkRowEvent } from '../../types.ts';
-/** Standard Session event or compact historical Assistant run. */
-export type SessionEventLike = SessionEvent | ChunkRowEvent;
+/** Client-only live chunk presentation; `seq` orders the transient row between durable Session seqs. */
+export interface AssistantLiveChunkEvent {
+    readonly type: 'assistant/live-chunk';
+    readonly seq: number;
+    readonly time: number;
+    readonly data: {
+        readonly attemptId: LlmAttemptId;
+        readonly turn: number;
+        readonly step: number;
+        readonly chunk: StreamChunk;
+    };
+}
+/** Current durable Session event or one client-only live chunk presentation. */
+export type SessionEventLike = SessionEvent | AssistantLiveChunkEvent;
 /** Client history entry retaining its coarse transport discriminator. */
 export type SessionEventLikeEntry = {
     readonly type: 'event';
     readonly event: SessionEvent;
 } | {
-    readonly type: 'chunks';
-    readonly event: ChunkRowEvent;
+    readonly type: 'transient';
+    readonly event: AssistantLiveChunkEvent;
 };
 /** Scalar live entry accepted by append-only Client paths. */
 export type SessionLiveEventEntry = Extract<SessionEventLikeEntry, {
     readonly type: 'event';
+}>;
+/** Durable Assistant event that atomically supersedes one attempt's transient rows. */
+export interface SessionAssistantSettlementEntry {
+    readonly type: 'event';
+    readonly event: SessionEvent<'assistant/message'> | SessionEvent<'assistant/attempt'>;
+}
+/** Client-only Assistant frame admitted outside durable cursor algebra. */
+export type SessionTransientEventEntry = Extract<SessionEventLikeEntry, {
+    readonly type: 'transient';
 }>;
 /** Exact delta that produced the latest event-window revision. */
 export type SessionEventChange = {
@@ -25,7 +46,11 @@ export type SessionEventChange = {
     readonly entries: readonly SessionEventLikeEntry[];
 } | {
     readonly kind: 'append';
-    readonly entries: readonly SessionLiveEventEntry[];
+    readonly entries: readonly SessionEventLikeEntry[];
+} | {
+    readonly kind: 'settle-assistant';
+    readonly attemptId: LlmAttemptId;
+    readonly entry?: SessionAssistantSettlementEntry;
 };
 /** Current contiguous event window and its latest synchronous delta. */
 export interface SessionEventWindow {
@@ -65,7 +90,13 @@ export declare class MutableSessionEventSource implements SessionEventSource {
      * Append one contiguous live entry.
      * @param entry - live tail entry.
      */
-    append(entry: SessionLiveEventEntry): void;
+    append(entry: SessionEventLikeEntry): void;
+    /**
+     * Replace one attempt's transient rows with its committed durable settlement.
+     * @param attemptId - process-local attempt whose live rows are now redundant.
+     * @param entry - durable settlement committed for that attempt.
+     */
+    settleAssistant(attemptId: LlmAttemptId, entry?: SessionAssistantSettlementEntry): void;
     private publish;
 }
 //# sourceMappingURL=events.d.ts.map

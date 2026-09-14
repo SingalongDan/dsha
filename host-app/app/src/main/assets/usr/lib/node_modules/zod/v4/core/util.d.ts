@@ -27,8 +27,13 @@ type ToZodKeyMismatch<Expected, Received> = schemas.$ZodType & {
         received: Received;
     };
 };
+declare const toZodDummy: unique symbol;
+type ToZodNormalize<T> = [T] extends [(...args: any[]) => any] ? T : [T] extends [object] ? {
+    [K in keyof T]: ToZodNormalize<T[K]>;
+} : T | typeof toZodDummy;
+type ToZodEqual<Output, T> = AssertEqual<Output, T> extends true ? true : IsAny<Output> extends true ? false : IsAny<T> extends true ? false : AssertEqual<ToZodNormalize<Output>, ToZodNormalize<T>>;
 type ToZodShape<Shape, T> = {
-    [K in keyof Shape]: Shape[K] extends schemas.$ZodType ? K extends keyof T ? AssertEqual<Shape[K]["_zod"]["output"], T[K]> extends true ? Shape[K] : ToZodKeyMismatch<T[K], Shape[K]["_zod"]["output"]> : ToZodKeyMismatch<never, Shape[K]["_zod"]["output"]> : Shape[K];
+    [K in keyof Shape]: Shape[K] extends schemas.$ZodType ? K extends keyof T ? ToZodEqual<Shape[K]["_zod"]["output"], T[K]> extends true ? Shape[K] : ToZodKeyMismatch<T[K], Shape[K]["_zod"]["output"]> : ToZodKeyMismatch<never, Shape[K]["_zod"]["output"]> : Shape[K];
 } & {
     [K in Exclude<keyof T, keyof Shape>]: ToZodKeyMismatch<T[K], never>;
 };
@@ -44,6 +49,7 @@ export type MakeRequired<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K
 export type Exactly<T, X> = T & Record<Exclude<keyof X, keyof T>, never>;
 export type NoUndefined<T> = T extends undefined ? never : T;
 export type Whatever = {} | undefined | null;
+export type Widen<T> = T extends string ? string : T extends number ? number : T extends boolean ? boolean : T extends bigint ? bigint : T;
 export type LoosePartial<T extends object> = InexactPartial<T> & {
     [k: string]: unknown;
 };
@@ -131,7 +137,7 @@ export type PropValues = Record<string, Set<Primitive>>;
 export type PrimitiveSet = Set<Primitive>;
 export declare function assertEqual<A, B>(val: AssertEqual<A, B>): AssertEqual<A, B>;
 export declare function assertNotEqual<A, B>(val: AssertNotEqual<A, B>): AssertNotEqual<A, B>;
-export declare function toZod<T>(): <S extends schemas.$ZodType>(schema: AssertEqual<S["_zod"]["output"], T> extends true ? S : ToZodTarget<S, T>) => S;
+export declare function toZod<T>(): <S extends schemas.$ZodType>(schema: ToZodEqual<S["_zod"]["output"], T> extends true ? S : ToZodTarget<S, T>) => S;
 export declare function assertIs<T>(_arg: T): void;
 export declare function assertNever(_x: never): never;
 export declare function assert<T>(_: any): asserts _ is T;
@@ -147,6 +153,17 @@ export declare function floatSafeRemainder(val: number, step: number): number;
 export declare function defineLazy<T, K extends keyof T>(object: T, key: K, getter: () => T[K]): void;
 export declare function objectClone(obj: object): any;
 export declare function assignProp<T extends object, K extends PropertyKey>(target: T, prop: K, value: K extends keyof T ? T[K] : any): void;
+/** A def's `shape` accessor, carrying whichever object it currently answers from. */
+export interface ShapeGetter {
+    (): Record<PropertyKey, any>;
+    raw: Record<PropertyKey, any>;
+}
+/**
+ * Whichever object a def's `shape` currently answers from: the one the caller passed until the first read, the frozen copy after it.
+ *
+ * Its keys and descriptors read without invoking anything, which is what lets a discriminated union check its discriminator, and the cycle walk read a shape, without resolving a getter that references the schema being constructed. A def that answers `shape` from an accessor of its own has none.
+ */
+export declare function rawShape(def: any): Record<PropertyKey, any> | undefined;
 export declare function mergeDefs(...defs: Record<string, any>[]): any;
 export declare function cloneDef(schema: schemas.$ZodType): any;
 export declare function getElementAtPath(obj: any, path: (string | number)[] | null | undefined): any;
@@ -229,9 +246,13 @@ export declare abstract class Class {
  */
 export declare function members(proto: object, table: object): void;
 /** Shadows a prototype member with an own value, so a getter that builds from the instance runs once. */
-export declare function own<T>(inst: object, key: string, value: T, enumerable?: boolean): T;
+export declare function own<T>(inst: object, key: PropertyKey, value: T, enumerable?: boolean): T;
 /** Like {@link own}, for a member that was never an own data property and has to stay out of `Object.keys`. */
-export declare function hide<T>(inst: object, key: string, value: T): T;
+export declare function hide<T>(inst: object, key: PropertyKey, value: T): T;
+/** Adds members a table derives from the instance: each builds on first read and shadows as own data, and assignment shadows the same way, as when these were own properties. */
+export declare function derived<T>(computes: {
+    [K in keyof T]?: (inst: T) => T[K];
+}, table: ProtoOf<T>): ProtoOf<T>;
 /** A trait's prototype members: a partial view of its own interface, with `this` typed as the instance. */
 export type ProtoOf<T> = {
     [K in keyof T]?: (T[K] extends (...args: infer A) => infer R ? (...args: A) => R : T[K]) | undefined;

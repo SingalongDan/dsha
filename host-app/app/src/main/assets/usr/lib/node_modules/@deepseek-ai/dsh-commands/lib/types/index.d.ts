@@ -4,14 +4,16 @@
  */
 import { Context } from '@deepseek-ai/cordis';
 import type { Agent } from '@deepseek-ai/dsh-agent';
-import type { EncodedImageAttachment } from '@deepseek-ai/dsh-attachment/types';
-import type { ImageBlock } from '@deepseek-ai/dsh-llm';
+import type { FileAttachmentRef } from '@deepseek-ai/dsh-attachment/types';
+import type { FileBlock, ImageBlock } from '@deepseek-ai/dsh-llm';
 import { TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol';
 import { CommandId } from './brand.ts';
-import type { CommandDescriptor, CommandExecution, CommandInputDescriptor, CommandResult } from './types.ts';
+import type { CommandDescriptor, CommandExecution, CommandInputDescriptor, CommandResult, CommandSubmitAttachment } from './types.ts';
 export { CommandId } from './brand.ts';
 export type * from './types.ts';
 export declare const name = "commands";
+/** Host resolver for Session-scoped staged file-upload receipts. */
+export type CommandFileReceiptResolver = (agent: Agent, receiptId: string) => FileAttachmentRef | undefined;
 /** Invocation passed to one registered command handler. */
 export interface CommandInvocation {
     /** Pairing id already written to this invocation's `command/run` event. */
@@ -21,13 +23,13 @@ export interface CommandInvocation {
     /** Exact text following the registered command name, including separator whitespace. */
     readonly rawInput: string;
     /**
-     * Durably admitted image blocks accompanying this invocation, in submission
-     * order; empty unless the definition declares `input.images`. The handler
+     * Durably admitted image and file blocks accompanying this invocation, in submission
+     * order; empty unless the definition declares `input.attachments`. The handler
      * owns their model-visible use — the registry never schedules them itself —
      * and a handler whose grammar cannot use them in this invocation returns an
      * error so the dispatching composer retains the originals.
      */
-    readonly attachments: readonly ImageBlock[];
+    readonly attachments: readonly (ImageBlock | FileBlock)[];
     /** Cancellation signal owned by the dispatching UI request. */
     readonly signal: AbortSignal;
 }
@@ -78,6 +80,8 @@ export declare class CommandRuntime extends TypertRemoteService {
     private commandSeq;
     /** Instance token keeping minted ids unique across process restarts over one resumed log. */
     private readonly instanceToken;
+    /** Optional provider installed by the Session upload owner. */
+    private readonly fileReceipts;
     constructor(ctx: Context);
     /**
      * Register a global or calling-agent-scoped command.
@@ -85,6 +89,12 @@ export declare class CommandRuntime extends TypertRemoteService {
      * @returns the exact effect disposer that unregisters this definition.
      */
     register(definition: CommandDefinition): () => void;
+    /**
+     * Register the sole authority that resolves staged file receipts for command submissions.
+     * @param resolver - Session-aware receipt resolver.
+     * @returns disposer that removes this exact resolver.
+     */
+    registerFileReceiptResolver(resolver: CommandFileReceiptResolver): () => void;
     /**
      * List the effective immutable command descriptors for one agent.
      * @param agent - exact receiving agent and scoped-layer key.
@@ -111,20 +121,22 @@ export declare class CommandRuntime extends TypertRemoteService {
      * handler-failure path is contained so the handler's own error stays the
      * reported failure.
      *
-     * Image admission is enforced here, not in the composer: images sent to a
-     * command that does not declare `input.images`, an absent attachment store,
-     * and an exceeded attachment limit each settle as an error result before
-     * the handler runs, and a rejected batch publishes no durable object.
+     * Attachment admission is enforced here, not in the composer: attachments sent to a
+     * command that does not declare `input.attachments`, an absent attachment store,
+     * and an exceeded image limit each settle as an error result before
+     * the handler runs. Validation rejection starts no attachment writes;
+     * a storage failure can leave only unreachable content-addressed objects
+     * for deferred collection.
      *
      * @param agent - exact receiving agent.
      * @param line - complete slash-command line.
-     * @param images - base64-encoded composer images accompanying the line, in
-     *   submission order; empty for a plain invocation.
+     * @param submittedAttachments - encoded images and staged file receipts accompanying the line,
+     *   in submission order; empty for a plain invocation.
      * @param signal - cancellation signal owned by the UI request.
      * @returns the settled execution (result + lifecycle pairing id), or
      *   `undefined` when syntax or name does not resolve.
      */
-    execute(agent: Agent, line: string, images: readonly EncodedImageAttachment[], signal: AbortSignal): Promise<CommandExecution | undefined>;
+    execute(agent: Agent, line: string, submittedAttachments: readonly CommandSubmitAttachment[], signal: AbortSignal): Promise<CommandExecution | undefined>;
     /** Contained `command/done` error append for a thrown handler or admission failure. */
     private settleThrown;
     /** Mint the next pairing id (monotonic; instance-token-prefixed so a resumed log never repeats one). */

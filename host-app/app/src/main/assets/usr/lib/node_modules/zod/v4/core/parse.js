@@ -44,25 +44,37 @@ export const _safeParse = (_Err) => (schema, value, _ctx) => {
     if (result instanceof Promise) {
         throw new core.$ZodAsyncError();
     }
-    return result.issues.length
-        ? {
-            success: false,
-            error: new (_Err ?? errors.$ZodError)(result.issues.map((iss) => util.finalizeIssue(iss, ctx, core.config()))),
-        }
-        : { success: true, data: result.value };
+    return result.issues.length ? failure(_Err, result.issues, ctx) : { success: true, data: result.value };
 };
 export const safeParse = /* @__PURE__*/ _safeParse(errors.$ZodRealError);
+// the error is built on the first read of `error`: finalizing the issues and constructing the instance is most of a failing parse, and a caller that only branches on `success` never pays it. a getter in the literal keeps this small; the alternative, one shared accessor descriptor plus a hidden state slot, reads ~15% faster but costs ~75 B gzipped in every bundle
+function failure(Err, issues, ctx) {
+    let error;
+    return {
+        success: false,
+        get error() {
+            if (!error) {
+                error = new Err(issues.map((iss) => util.finalizeIssue(iss, ctx, core.config())));
+                // finalizeIssue drops `input`, so the built error holds nothing; keeping the raw issues past this point pins the parsed value for the life of the result
+                issues = undefined;
+                ctx = undefined;
+            }
+            return error;
+        },
+        set error(e) {
+            error = e;
+            // a replacement makes the getter's branch unreachable, so the captures have to go here too
+            issues = undefined;
+            ctx = undefined;
+        },
+    };
+}
 export const _safeParseAsync = (_Err) => async (schema, value, _ctx) => {
     const ctx = _ctx ? { ..._ctx, async: true } : { async: true };
     let result = schema._zod.run({ value, issues: [] }, ctx);
     if (result instanceof Promise)
         result = await result;
-    return result.issues.length
-        ? {
-            success: false,
-            error: new _Err(result.issues.map((iss) => util.finalizeIssue(iss, ctx, core.config()))),
-        }
-        : { success: true, data: result.value };
+    return result.issues.length ? failure(_Err, result.issues, ctx) : { success: true, data: result.value };
 };
 export const safeParseAsync = /* @__PURE__*/ _safeParseAsync(errors.$ZodRealError);
 // registry mirrors of the compiler's sentinels, so this module never imports the compiler
@@ -71,12 +83,19 @@ const COMPILE_FALLBACK = /* @__PURE__ */ Symbol.for("zod.compile.fallback");
 // Deliberately tiny, because v8 will not inline a body carrying the fallback's object literals and throw. Everything that is not the compiled happy path lives in validateFallback, and that split is worth ~35% on a compiled schema.
 export const validate = ((schema, value, _ctx) => {
     const validator = schema._zod.bag.validator;
-    if (validator !== undefined && validator(value) !== COMPILE_INVALID)
-        return true;
+    if (validator !== undefined) {
+        if (validator(value) !== COMPILE_INVALID)
+            return true;
+        // a definite sentinel means the runtime would reject, so skip the re-parse; a ctx can still change the answer
+        if (validator.definite === true && _ctx === undefined)
+            return false;
+    }
     return validateFallback(schema, value, _ctx);
 });
 function validateFallback(schema, value, _ctx) {
-    const ctx = _ctx ? { ..._ctx, async: false } : { async: false };
+    const ctx = _ctx
+        ? { ..._ctx, async: false, abortEarly: true }
+        : { async: false, abortEarly: true };
     const fallbackRun = schema._zod.bag.fallbackRun;
     let result;
     if (fallbackRun) {
@@ -94,7 +113,9 @@ function validateFallback(schema, value, _ctx) {
 }
 // no fast path: the compiler keeps async parses on the runtime, because a promise-returning callback that is not declared async compiles to a throw
 export const validateAsync = async (schema, value, _ctx) => {
-    const ctx = _ctx ? { ..._ctx, async: true } : { async: true };
+    const ctx = _ctx
+        ? { ..._ctx, async: true, abortEarly: true }
+        : { async: true, abortEarly: true };
     let result = schema._zod.run({ value, issues: [] }, ctx);
     if (result instanceof Promise)
         result = await result;

@@ -7,6 +7,7 @@ export declare class SessionHistoryController {
     private readonly ctx;
     private readonly promote;
     private readonly closeFollowers;
+    private readonly assistantStreams;
     /**
      * @param ctx - Host context carrying Session query and projection services.
      * @param promote - starts ordinary Session activation after snapshot delivery.
@@ -23,7 +24,7 @@ export declare class SessionHistoryController {
      * Follow events appended after an initial cursor on one durable address.
      * @param request - durable address and last committed sequence already held by the caller.
      * @param signal - stream cancellation owned by the Remote carrier.
-     * @returns a complete opening snapshot followed by gap-free event frames.
+     * @returns a complete opening snapshot followed by gap-free durable events and opted-in assistant frames.
      */
     follow(request: SessionFollowRequest, signal: AbortSignal): AsyncIterable<SessionFollowFrame>;
     private sourceFor;

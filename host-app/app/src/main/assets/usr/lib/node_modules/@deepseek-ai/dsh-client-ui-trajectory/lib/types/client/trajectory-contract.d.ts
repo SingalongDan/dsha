@@ -1,4 +1,4 @@
-import type { AssistantMessageNode, ConversationLocation, ConversationNode, ConversationPromptSnapshot, ConversationViewNode, MessageImagesOwnerProps, PartialAssistant, RequestPromptChange, RequestView, RunningToolCall, ToolCallBlock } from '@deepseek-ai/dsh-client-ui-conversation/client';
+import type { AssistantMessageNode, ConversationLocation, ConversationNode, ConversationPromptSnapshot, ConversationViewNode, MessageImagesOwnerProps, PartialAssistant, RequestPromptChange, RequestView, RunningToolCall, SystemPromptNode, ToolCallBlock } from '@deepseek-ai/dsh-client-ui-conversation/client';
 import type { SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots';
 /** Request-header facts retained by the Trajectory target. */
 export interface TrajectoryRequestHeaderState {
@@ -10,6 +10,9 @@ export interface TrajectoryRequestHeaderState {
 }
 /** One independently assembled contribution to the legacy Trajectory ledger. */
 export type TrajectoryContribution = {
+    readonly kind: 'system-prompt';
+    readonly prompt: SystemPromptNode;
+} | {
     readonly kind: 'node';
     readonly node: ConversationNode;
 } | {
@@ -50,6 +53,8 @@ export interface TrajectoryConversationViewNode extends ConversationViewNode {
 }
 /** Stage-oriented Trajectory data assembled from registered business Contexts. */
 export interface TrajectorySnapshot {
+    /** Complete loaded prompt text whose request header is outside the window. */
+    readonly systemPrompts?: readonly SystemPromptNode[];
     readonly eventNodes: readonly ConversationNode[];
     readonly eventLocations: ReadonlyMap<number, ConversationLocation>;
     readonly requests: readonly RequestView[];

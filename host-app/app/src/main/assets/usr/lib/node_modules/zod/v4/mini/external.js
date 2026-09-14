@@ -4,7 +4,7 @@ export * from "./schemas.js";
 export * from "./checks.js";
 export { deepPartial } from "./deep-partial.js";
 export { input, output } from "./in-out.js";
-export { globalRegistry, registry, config, memoizer, $output, $input, $brand, clone, regexes, treeifyError, prettifyError, formatError, flattenError, TimePrecision, util, NEVER, toZod, compile, ZodCompileAsyncError, ZodCompileUnsupportedError, getDiscriminatedOption, } from "../core/index.js";
+export { globalRegistry, registry, config, memoizer, $output, $input, $brand, clone, regexes, treeifyError, prettifyError, formatError, flattenError, TimePrecision, util, NEVER, INVALID, toZod, compile, withParser, ZodCompileAsyncError, ZodCompileUnsupportedError, getDiscriminatedOption, } from "../core/index.js";
 export { toJSONSchema } from "../core/json-schema-processors.js";
 export * as locales from "../locales/index.js";
 /** A special constant with type `never` */

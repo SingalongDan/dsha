@@ -19,6 +19,7 @@ export interface TrajectoryTurnModel {
 }
 /** Snapshot slice the trajectory view folds. */
 export interface TrajectoryLayoutInput {
+    systemPrompts?: TrajectorySnapshot['systemPrompts'];
     nodes: TrajectorySnapshot['eventNodes'];
     eventLocations?: ReadonlyMap<number, ConversationLocation>;
     partial: TrajectorySnapshot['partial'];

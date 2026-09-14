@@ -16,7 +16,7 @@ declare module '@deepseek-ai/cordis' {
         dshHomePath?: typeof dshHomePath;
     }
 }
-export { composeEntries, DEFAULT_PROFILE_BUNDLES, DEFAULT_PROFILE_PATCH_RELOAD, healProfilesModuleFallback, initProfile, loadProfile, PROFILE_PATCH_FILENAME, PROFILE_TEMPLATES, PROFILES_DIR, readProfileManifest, resolveBundleDir, resolveProfileDir, writeProfileManifest, type DshBundleManifest, type DshManifestSection, type DshProfileManifest, type Profile, type ProfileLayer, type ProfileManifest, type ProfileModuleFallbackOptions, type ProfilePatchReload, type ProfileTemplate, } from './profile.ts';
+export { composeEntries, DEFAULT_PROFILE_BUNDLES, DEFAULT_PROFILE_PATCH_RELOAD, healProfilesModuleFallback, initProfile, loadProfile, loadProfileDirectory, PROFILE_PATCH_FILENAME, PROFILE_TEMPLATES, PROFILES_DIR, readProfileManifest, resolveBundleDir, resolveProfileDir, writeProfileManifest, type Profile, type ProfileLayer, type ProfileManifest, type ProfileModuleFallbackOptions, type ProfileTemplate, } from './profile.ts';
 /**
  * Resolve the config to boot. Replay swaps a `cordis.yml` basename for
  * `cordis.snapshot.yml` in the same directory; every other mode keeps the path.
@@ -44,7 +44,7 @@ export declare function loadEnv(binName: string, dir?: string, warn?: (line: str
  * @param cwd - the invoking directory whose `.env` is the project layer.
  * @param warn - sink for the one-line misconfiguration diagnostics.
  * @returns this run's frozen environment snapshot.
- * @throws when either file declares a bootstrap-only variable.
+ * @throws when either file declares a bootstrap-only variable, except {@link HOME_LAYER_PROXY_NAMES} in the Harness-home file.
  */
 export declare function loadLayeredEnv(binName: string, cwd?: string, warn?: (line: string) => void): LaunchEnvironmentSnapshot;
 /** Options for live user patch-layer reconciliation. */
@@ -254,9 +254,10 @@ export declare const HARNESS_SOURCE_SECTION = "harness:source";
  * explicitly distinguishing it from the task workspace and current working
  * directory. The self-referential `dsh-tool-cordis` toolset reads and edits this
  * checkout. Call once on the settled boot context ({@link boot}); the section
- * uses the shared first-party placement just after the harness identity opener
- * and before the deployment persona. A booted tree with no `systemPrompt` service has no prompt to
- * augment, so this is then a no-op that returns `undefined`. The section is
+ * uses the shared first-party placement after reusable instructions
+ * and before the Web surface and persona suffix. A booted tree with no
+ * `systemPrompt` service has no prompt to augment, so this is then a no-op
+ * that returns `undefined`. The section is
  * registered against the `systemPrompt` service's fiber, so a dev HMR reload of
  * that plugin drops it until the next boot.
  * @param ctx - the settled boot context whose global system prompt to augment.

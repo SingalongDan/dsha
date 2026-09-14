@@ -52,6 +52,10 @@ const API_REMOTE_FORWARDED_EVENTS = [
 		mode: "emit"
 	},
 	{
+		event: "goal/activation-changed",
+		mode: "emit"
+	},
+	{
 		event: "cordis/request-run",
 		mode: "emit"
 	},
@@ -109,13 +113,14 @@ function remoteEventSource(ctx) {
 				});
 			}));
 			return ctx.on(event, (function(request, next) {
-				const subject = carrierKeyOf(this);
-				if (subject === void 0) return next();
-				const value = Reflect.get(subject, "ctx");
-				if (typeof value !== "object" || value === null) throw new TypeError(`forwarded scoped event ${JSON.stringify(event)} has no live Context`);
+				const carrierAgent = carrierKeyOf(this);
+				if (carrierAgent === void 0) return next();
+				const agent = request.agent;
+				if (agent === void 0 || agent !== carrierAgent) throw new TypeError(`forwarded scoped event ${JSON.stringify(event)} must carry its Agent directly`);
 				return forwardWaterfall(queue, event, request, {
-					value,
-					subject
+					value: agent.ctx,
+					subject: agent,
+					agentId: agent.id
 				}, next);
 			}));
 		});

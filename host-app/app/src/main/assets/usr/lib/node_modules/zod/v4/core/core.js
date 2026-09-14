@@ -58,7 +58,7 @@ proto, params) {
                 _zodDesc.value = undefined;
             }
         }
-        if (inst._zod.traits.has(name)) {
+        else if (inst._zod.traits.has(name)) {
             return;
         }
         inst._zod.traits.add(name);

@@ -1,4 +1,4 @@
-/** Browser attachment plugin: fills conversation's composer and message-image slots. */
+/** Browser attachment plugin: fills conversation's composer and image slots. */
 import type { Context as ClientContext } from '@deepseek-ai/cordis';
 /** Slot registry required by this presentation plugin. */
 export declare const inject: string[];

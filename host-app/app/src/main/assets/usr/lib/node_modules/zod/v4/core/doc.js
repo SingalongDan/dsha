@@ -5,10 +5,15 @@ export class Doc {
         this.args = args;
         this.closed = closed;
     }
+    // the compiler catches a child's throw and keeps writing into this doc, so the indent has to unwind with it
     indented(fn) {
         this.indent += 1;
-        fn(this);
-        this.indent -= 1;
+        try {
+            fn(this);
+        }
+        finally {
+            this.indent -= 1;
+        }
     }
     write(arg) {
         if (typeof arg === "function") {

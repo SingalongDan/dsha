@@ -1,5 +1,5 @@
 import { allProcessors } from "./json-schema-processors.js";
-import { extractDefs, finalize, initializeContext, process, } from "./to-json-schema.js";
+import { extractDefs, finalize, initializeContext, processSchema, } from "./to-json-schema.js";
 /**
  * Legacy class-based interface for JSON Schema generation.
  * This class wraps the new functional implementation to provide backward compatibility.
@@ -71,7 +71,7 @@ export class JSONSchemaGenerator {
      * This must be called before emit().
      */
     process(schema, _params = { path: [], schemaPath: [] }) {
-        return process(schema, this.ctx, _params);
+        return processSchema(schema, this.ctx, _params);
     }
     /**
      * Emit the final JSON Schema after processing.

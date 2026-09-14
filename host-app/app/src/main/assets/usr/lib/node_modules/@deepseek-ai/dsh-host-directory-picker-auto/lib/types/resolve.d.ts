@@ -9,14 +9,16 @@ import type { Config as HttpServerConfig } from '@deepseek-ai/dsh-host-webserver
 /** Concrete interaction backend the resolver chooses between. */
 export type DirectoryPickerBackendKind = 'native' | 'browse';
 /** Environment keys the resolution reads (a `process.env` subset). */
-export type DirectoryPickerEnv = Readonly<Partial<Record<'SSH_CONNECTION' | 'SSH_TTY' | 'DISPLAY' | 'WAYLAND_DISPLAY', string>>>;
+export type DirectoryPickerEnv = Readonly<Partial<Record<'DISPLAY' | 'WAYLAND_DISPLAY', string>>>;
 /** Host facts the backend choice is a pure function of, sampled once at boot. */
 export interface DirectoryPickerHostFacts {
     /** Effective webserver bind host (the schema's closed loopback/all-interfaces union). */
     bindHost: HttpServerConfig['host'];
     /** Host process platform. */
     platform: NodeJS.Platform;
-    /** Environment sample; SSH marks a remote operator, DISPLAY/WAYLAND_DISPLAY a Linux display. */
+    /** SSH launch fact from the inherited process layer, independent of `.env` values. */
+    ssh: boolean;
+    /** Environment sample; DISPLAY/WAYLAND_DISPLAY marks a Linux display. */
     env: DirectoryPickerEnv;
     /** Whether a Linux chooser binary the native backend can drive (zenity/kdialog) is on PATH; consulted only when `platform` is linux. */
     linuxChooser: boolean;

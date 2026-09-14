@@ -1,6 +1,8 @@
 import type { SessionEvent } from '@deepseek-ai/dsh-session/types';
 import type { CommandId } from '@deepseek-ai/dsh-commands/brand';
 import type { ConversationNodeDefinition } from '@deepseek-ai/dsh-client-ui-conversation/client';
+/** The command name whose runs this projection owns. */
+export declare const GOAL_COMMAND = "goal";
 /** Goal-owned human command input projected independently of model messages. */
 export interface GoalCommandInputData {
     readonly commandId: CommandId;

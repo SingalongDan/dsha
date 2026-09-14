@@ -1,12 +1,9 @@
 /**
- * Per-message feedback controls: a Like/Dislike pair plus an optional note.
- * The buttons render inside the assistant message's IconActions row, so they
- * reuse that row's chrome and sit between copy and branch. The note editor is
- * a popover (portaled to `document.body`) anchored to the note trigger, not an
- * inline expansion: a 260px textarea plus buttons cannot fit the row at any
- * viewport, and an inline element pushed the branch action and clock out of the
- * conversation column. Portaling out of the column also escapes its `overflow`
- * clip, so the panel cannot be cropped or detached from the message it annotates.
+ * Per-message feedback controls: the Like/Dislike pair inside the assistant
+ * message's IconActions row, between copy and branch. Either rating opens the
+ * Session's feedback dialog, whose submission records that judgment with its
+ * category and text. Clicking the recorded rating retracts it. A recorded rating
+ * shows the filled glyph so the signal survives a pointer leaving the row.
  * @module @deepseek-ai/dsh-client-ui-message-feedback/client/MessageFeedbackActions
  */
 import type { MessageFeedbackActionProps } from './slots.ts';
@@ -14,8 +11,7 @@ import type { MessageFeedbackActionProps } from './slots.ts';
  * One message's feedback controls.
  * @param props - the owner's message identity, the injected verbs, and the
  * shared feedback hook.
- * @returns the rating buttons and the note trigger, with the note editor
- * portal-open beneath the trigger while it is open.
+ * @returns the rating buttons with any failure notice beside them.
  */
-export declare function MessageFeedbackActions({ messageId, ensure, rate, toggle, clearNote, useFeedback, t }: MessageFeedbackActionProps): import("react").JSX.Element;
+export declare function MessageFeedbackActions({ messageId, ensure, current, retract, openDialog, useFeedback, t, }: MessageFeedbackActionProps): import("react").JSX.Element;
 //# sourceMappingURL=MessageFeedbackActions.d.ts.map

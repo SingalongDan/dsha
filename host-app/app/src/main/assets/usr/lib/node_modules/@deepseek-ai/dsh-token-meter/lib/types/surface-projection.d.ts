@@ -1,10 +1,8 @@
 /**
- * The O(1) surface-token fold shared by the token-meter projection units.
+ * The context-pressure projection's O(1) surface-token fold.
  *
- * A projection state must stay bounded — the persisted projection cache
- * checkpoints every unit's whole state, so carrying the priced surface
- * (one node per model-visible message) would grow a checkpoint without
- * bound over the session's life. Instead, replacements ride the compact
+ * Its checkpoint keeps scalar totals rather than the retained surface used
+ * by context breakdown. Replacements ride the compact
  * seam's shadow-price protocol: the metering event immediately before a
  * surface `replace` (`compaction/summary` or `compaction/prune`) states the
  * heuristic price of the exact replaced range, so the fold keeps a running

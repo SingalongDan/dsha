@@ -1,6 +1,6 @@
 /** Pure read-card derivation from raw result content and metadata. @module */
 import type { ReadBlockProps } from '@deepseek-ai/dsh-client-ui-primitives';
-import { type ToolCallBlock } from './tool-call-model.ts';
+import type { ToolCallBlock } from './tool-call-model.ts';
 /**
  * Content lines the chat row's resident read body shows before collapsing the
  * middle — half the primitive's own default, which the details panel keeps. A
@@ -18,6 +18,18 @@ export declare const CHAT_READ_MAX_LINES = 8;
  * site.
  */
 export type ReadCardModel = Pick<ReadBlockProps, 'label' | 'lines' | 'totalLines' | 'lang'>;
+/**
+ * The line one `read` call was about, from its arguments.
+ *
+ * `offset` is the read tool's own 1-based start line, so opening the path can
+ * land where the model looked. Available while the call is still running,
+ * unlike the persisted metadata, because the arguments carry it. The arguments
+ * are model-produced JSON: only an integer of at least 1 is a line, and a call
+ * whose `offset` is anything else names none.
+ * @param block - running or settled Tool block.
+ * @returns the 1-based line, or undefined when the call named none.
+ */
+export declare function readCallLine(block: ToolCallBlock): number | undefined;
 /**
  * Derive a settled root read card after validating its persisted metadata and
  * model-facing read envelope.

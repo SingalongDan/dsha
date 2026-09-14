@@ -3,7 +3,7 @@
 export const MAX_REFERENCES = 3;
 /** Default number of discovery candidates returned to a host. */
 export const DEFAULT_CANDIDATE_LIMIT = 50;
-/** Default UTF-8 budget for one rendered reference JSON object. */
+/** Minimum automatic UTF-8 budget for one rendered reference JSON object. */
 export const DEFAULT_MAX_REFERENCE_BYTES = 65_536;
 /** Typed session-reference failure suitable for host protocol error mapping. */
 export class SessionReferenceError extends Error {

@@ -1,3 +1,4 @@
+import { lastAssistantStreamChunk } from '@deepseek-ai/dsh-llm/assistant-stream';
 function isCount(value) {
     return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
 }
@@ -13,6 +14,9 @@ function safeSum(values) {
 function messageRoute(message) {
     const { provider, model } = message.source;
     return provider.length > 0 && model.length > 0 ? { provider, model } : undefined;
+}
+function streamUsage(stream) {
+    return lastAssistantStreamChunk(stream, 'usage')?.usage;
 }
 function normalizeUsage(usage, route) {
     const { inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens, reasoningTokens, totalTokens, } = usage;
@@ -165,23 +169,19 @@ export function deriveTurnTokenUsage(events) {
                 state = { kind: 'open', turn, step: event.data.step };
             continue;
         }
-        if (event.type === 'assistant/chunk') {
+        if (event.type === 'assistant/attempt') {
             if (event.data.turn !== turn
                 || state.kind !== 'open'
                 || !sameAttempt(state, event.data.turn, event.data.step)) {
                 invalid = true;
                 continue;
             }
-            if (event.data.chunk.type === 'usage') {
-                state = { ...state, sample: event.data.chunk.usage };
-            }
-            else if (event.data.chunk.type === 'finish'
-                && (event.data.chunk.reason.kind === 'error' || event.data.chunk.reason.kind === 'aborted')) {
-                if (!closeOpen())
-                    invalid = true;
-                else
-                    state = { kind: 'finishClosed', turn, step: event.data.step };
-            }
+            const sample = streamUsage(event.data.stream) ?? state.sample;
+            state = { kind: 'open', turn, step: event.data.step, ...(sample === undefined ? {} : { sample }) };
+            if (!closeOpen())
+                invalid = true;
+            else
+                state = { kind: 'finishClosed', turn, step: event.data.step };
             continue;
         }
         if (event.type === 'assistant/message') {
@@ -191,8 +191,9 @@ export function deriveTurnTokenUsage(events) {
                 invalid = true;
                 continue;
             }
-            if (event.data.usage !== undefined)
-                state = { ...state, sample: event.data.usage };
+            const sample = event.data.usage ?? streamUsage(event.data.stream);
+            if (sample !== undefined)
+                state = { ...state, sample };
             if (!closeOpen(messageRoute(event.data.message)))
                 invalid = true;
             else

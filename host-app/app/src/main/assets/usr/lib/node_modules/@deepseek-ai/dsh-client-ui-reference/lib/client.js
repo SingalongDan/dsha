@@ -23,10 +23,6 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region ../../util/workspace-path/src/index.ts
-		/**
-		* Browser-safe Workspace path and display helpers.
-		* @module @deepseek-ai/dsh-util-workspace-path
-		*/
 		/** Whether a path uses a Windows drive or UNC prefix. */
 		function isWindowsStylePath(value) {
 			return /^[A-Za-z]:[/\\]/.test(value) || value.startsWith("\\\\");

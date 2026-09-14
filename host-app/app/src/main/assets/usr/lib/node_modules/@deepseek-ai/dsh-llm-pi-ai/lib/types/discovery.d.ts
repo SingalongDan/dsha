@@ -13,11 +13,11 @@
  * metadata the surface offers for adoption. `settings.yaml` remains the only
  * thing that decides what a route serves.
  *
- * Only OpenAI-compatible protocols are interrogated. Their listing is the one
- * shape a gateway, a self-hosted server, and the official endpoints all agree
- * on, which is the case this action exists for; every other protocol reports
- * that it cannot be interrogated so the surface falls back to hand-entry
- * rather than guessing a response shape.
+ * OpenAI-compatible and Anthropic Messages protocols are interrogated through
+ * their native model-listing endpoints. The parser accepts the standard
+ * `data` array and the enriched `models` map some compatible gateways expose.
+ * Every other protocol reports that it cannot be interrogated so the surface
+ * falls back to hand-entry rather than guessing its response fields.
  *
  * @module dsh-llm-pi-ai/discovery
  */

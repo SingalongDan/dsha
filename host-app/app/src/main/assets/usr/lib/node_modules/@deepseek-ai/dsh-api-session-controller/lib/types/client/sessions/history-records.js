@@ -9,7 +9,7 @@ export function historyEntries(records) {
 }
 /**
  * Read the first logical sequence represented by one wire record.
- * @param record - validated scalar event or packed Assistant delta run.
+ * @param record - validated Session event.
  * @returns inclusive first Session sequence.
  */
 export function historyRecordFirstSeq(record) {
@@ -17,15 +17,10 @@ export function historyRecordFirstSeq(record) {
 }
 /**
  * Read the final logical sequence represented by one wire record.
- * @param record - validated scalar event or packed Assistant delta run.
+ * @param record - validated Session event.
  * @returns inclusive final Session sequence.
  */
 export function historyRecordLastSeq(record) {
-    if (record.type === 'event')
-        return record.event.seq;
-    const length = record.event.type === 'chunkrow/tool-call-chunks'
-        ? record.event.data.args.length
-        : record.event.data.texts.length;
-    return record.event.seq + length - 1;
+    return record.event.seq;
 }
 //# sourceMappingURL=history-records.js.map

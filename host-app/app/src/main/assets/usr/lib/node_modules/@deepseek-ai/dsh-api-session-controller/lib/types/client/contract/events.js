@@ -83,6 +83,27 @@ export class MutableSessionEventSource {
             entries,
         });
     }
+    /**
+     * Replace one attempt's transient rows with its committed durable settlement.
+     * @param attemptId - process-local attempt whose live rows are now redundant.
+     * @param entry - durable settlement committed for that attempt.
+     */
+    settleAssistant(attemptId, entry) {
+        const entries = materialize(this.window).filter(candidate => (candidate.type !== 'transient' || candidate.event.data.attemptId !== attemptId));
+        if (entry !== undefined) {
+            const index = entries.findIndex(candidate => candidate.event.seq > entry.event.seq);
+            if (index < 0)
+                entries.push(entry);
+            else
+                entries.splice(index, 0, entry);
+        }
+        this.window = leaf(entries);
+        this.publish(this.snapshot.hasMore, {
+            kind: 'settle-assistant',
+            attemptId,
+            ...(entry === undefined ? {} : { entry }),
+        });
+    }
     publish(hasMore, change) {
         this.snapshot = windowSnapshot(this.window, hasMore, this.snapshot.revision + 1, change);
         notifySubscribers(this.listeners, '[session-controller] event feed');

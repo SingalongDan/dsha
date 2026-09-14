@@ -9,13 +9,13 @@ import type { SessionEventLikeEntry } from '../contract/events.ts';
 export declare function historyEntries(records: readonly SessionHistoryRecord[]): readonly SessionEventLikeEntry[];
 /**
  * Read the first logical sequence represented by one wire record.
- * @param record - validated scalar event or packed Assistant delta run.
+ * @param record - validated Session event.
  * @returns inclusive first Session sequence.
  */
 export declare function historyRecordFirstSeq(record: SessionHistoryRecord): number;
 /**
  * Read the final logical sequence represented by one wire record.
- * @param record - validated scalar event or packed Assistant delta run.
+ * @param record - validated Session event.
  * @returns inclusive final Session sequence.
  */
 export declare function historyRecordLastSeq(record: SessionHistoryRecord): number;

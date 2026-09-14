@@ -7,7 +7,7 @@ export { input, output } from "./in-out.js";
 export type { infer } from "../core/index.js";
 export type { JSONType } from "../core/util.js";
 export type { CompileOptions } from "../core/index.js";
-export { globalRegistry, registry, config, memoizer, $output, $input, $brand, clone, regexes, treeifyError, prettifyError, formatError, flattenError, TimePrecision, util, NEVER, toZod, compile, ZodCompileAsyncError, ZodCompileUnsupportedError, getDiscriminatedOption, } from "../core/index.js";
+export { globalRegistry, registry, config, memoizer, $output, $input, $brand, clone, regexes, treeifyError, prettifyError, formatError, flattenError, TimePrecision, util, NEVER, INVALID, toZod, compile, withParser, ZodCompileAsyncError, ZodCompileUnsupportedError, getDiscriminatedOption, } from "../core/index.js";
 export { toJSONSchema } from "../core/json-schema-processors.js";
 export * as locales from "../locales/index.js";
 /** A special constant with type `never` */

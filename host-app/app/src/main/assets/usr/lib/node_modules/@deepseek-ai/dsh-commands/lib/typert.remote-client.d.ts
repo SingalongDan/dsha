@@ -3,24 +3,23 @@ import type {
   RemoteResult,
   TypertRemoteContribution,
 } from '@deepseek-ai/dsh-typert-protocol'
-import type { EncodedImageAttachment } from '@deepseek-ai/dsh-attachment/types'
-import type { CommandDescriptor, CommandExecution } from '@deepseek-ai/dsh-commands/types'
+import type { CommandDescriptor, CommandExecution, CommandSubmitAttachment } from '@deepseek-ai/dsh-commands/types'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertRemoteNamespace$636f6d6d616e6473 {
-    execute: (agentId: SessionId, line: string, images: readonly EncodedImageAttachment[], signal?: AbortSignal) => Promise<RemoteResult<CommandExecution | undefined>>
+    execute: (agentId: SessionId, line: string, submittedAttachments: readonly CommandSubmitAttachment[], signal?: AbortSignal) => Promise<RemoteResult<CommandExecution | undefined>>
     list: (agentId: SessionId) => Promise<RemoteResult<readonly CommandDescriptor[]>>
   }
   interface TypertRemoteMap {
-    'commands/execute': (agentId: SessionId, line: string, images: readonly EncodedImageAttachment[], signal?: AbortSignal) => Promise<RemoteResult<CommandExecution | undefined>>
+    'commands/execute': (agentId: SessionId, line: string, submittedAttachments: readonly CommandSubmitAttachment[], signal?: AbortSignal) => Promise<RemoteResult<CommandExecution | undefined>>
     'commands/list': (agentId: SessionId) => Promise<RemoteResult<readonly CommandDescriptor[]>>
   }
   interface TypertRemoteNamespaceMap {
     'commands': TypertRemoteNamespace$636f6d6d616e6473
   }
   interface TypertRemoteScopeMap {
-    'agent:commands/execute': (line: string, images: readonly EncodedImageAttachment[], signal?: AbortSignal) => Promise<RemoteResult<CommandExecution | undefined>>
+    'agent:commands/execute': (line: string, submittedAttachments: readonly CommandSubmitAttachment[], signal?: AbortSignal) => Promise<RemoteResult<CommandExecution | undefined>>
     'agent:commands/list': () => Promise<RemoteResult<readonly CommandDescriptor[]>>
   }
 }

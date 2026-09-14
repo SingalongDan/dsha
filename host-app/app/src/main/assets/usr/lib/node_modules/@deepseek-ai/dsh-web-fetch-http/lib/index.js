@@ -1,6 +1,7 @@
 import z from "@deepseek-ai/schemastery";
 import { WebError } from "@deepseek-ai/dsh-web";
 import { deadline, timeoutOf } from "@deepseek-ai/dsh-timeout";
+import { proxyRouteFor } from "@deepseek-ai/dsh-http-proxy";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import ipaddr from "ipaddr.js";
@@ -121,14 +122,33 @@ function embeddedIpv4Address(bytes, prefixLength) {
 	return [...bytes.slice(prefixBytes, prefixBytes + beforeReservedOctet), ...bytes.slice(9, 13 - beforeReservedOctet)].join(".");
 }
 /**
-* Fetch through an Undici agent whose lookup callback returns only the already
-* validated address set. The URL hostname remains intact for HTTP Host and TLS SNI.
+* Whether a hostname is an IP literal that {@link resolvePublicAddresses} would refuse.
 *
-* @param url - validated HTTP(S) URL.
+* A proxied hop skips those checks because the proxy resolves the origin, but a literal needs no
+* resolution: the address is already stated, and handing it to a proxy running on this machine
+* would reach exactly the loopback or private service the checks exist to keep out of reach.
+*
+* @param hostname - a URL's hostname, bracketed or not.
+* @returns true when the host is a literal address no request may be sent to.
+*/
+function isNonPublicIpLiteral(hostname) {
+	const unbracketed = stripIpv6Brackets(hostname);
+	return isIP(unbracketed) !== 0 && !isPublicIpAddress(unbracketed);
+}
+/**
+* Fetch through an agent whose lookup callback returns only the already validated address set. The
+* URL hostname remains intact for HTTP Host and TLS SNI.
+*
+* The agent is this request's own because the address set is: pinning is how this package refuses a
+* DNS answer that changes between validation and connection, and it may not apply process-wide —
+* an operator-configured MCP server or model endpoint on loopback is a supported destination, and
+* only the URLs this tool fetches are the model's to choose.
+*
+* @param url - validated HTTP(S) URL the policy does not route through a proxy.
 * @param addresses - public addresses returned by {@link resolvePublicAddresses}.
 * @param headers - request headers.
 * @param signal - request and body-read cancellation signal.
-* @returns a response plus the dispatcher disposer its consumer must call.
+* @returns a response plus the disposer its consumer must call.
 */
 async function requestPinned(url, addresses, headers, signal) {
 	const { Agent, fetch } = await import("undici");
@@ -154,10 +174,39 @@ async function requestPinned(url, addresses, headers, signal) {
 		throw error;
 	}
 }
+/**
+* Fetch through the dispatcher the proxy policy already installed, letting the proxy resolve the
+* origin.
+*
+* No address set is pinned because none exists to pin: the proxy performs the lookup, and a
+* connection pinned to a locally resolved address would reach the origin directly and defeat the
+* proxy. The dispatcher is the process-wide one, so hops share its connection pool and no caller
+* closes it.
+*
+* @param dispatcher - the route's dispatcher, from `proxyRouteFor`.
+* @param url - validated HTTP(S) URL the policy routes through a proxy.
+* @param headers - request headers.
+* @param signal - request and body-read cancellation signal.
+* @returns a response plus a disposer that releases nothing, so both paths close alike.
+*/
+async function requestVia(dispatcher, url, headers, signal) {
+	const { fetch } = await import("undici");
+	return {
+		response: await fetch(url, {
+			method: "GET",
+			redirect: "manual",
+			headers,
+			signal,
+			dispatcher
+		}),
+		close: () => Promise.resolve()
+	};
+}
 /** Production network operations kept as an object so provider tests can replace resolution only. */
 const publicHttpNetwork = {
 	resolve: resolvePublicAddresses,
-	request: requestPinned
+	request: requestPinned,
+	requestVia
 };
 /**
 * Build the connector lookup that serves a fixed validated answer set.
@@ -444,12 +493,15 @@ var HttpFetchProvider = class {
 		}
 	}
 	async requestOnce(url, signal) {
+		const headers = {
+			"user-agent": this.limits.userAgent,
+			"accept": "text/html,application/xhtml+xml,text/*;q=0.9,application/json;q=0.8"
+		};
 		try {
+			const route = proxyRouteFor(url);
+			if (route.proxied && !isNonPublicIpLiteral(url.hostname)) return await publicHttpNetwork.requestVia(route.dispatcher, url, headers, signal);
 			const addresses = await this.resolveAddresses(url.hostname, signal);
-			return await publicHttpNetwork.request(url, addresses, {
-				"user-agent": this.limits.userAgent,
-				"accept": "text/html,application/xhtml+xml,text/*;q=0.9,application/json;q=0.8"
-			}, signal);
+			return await publicHttpNetwork.request(url, addresses, headers, signal);
 		} catch (error) {
 			if (error instanceof WebError) throw error;
 			throw translateAbortOrNetwork(error, signal);

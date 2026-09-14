@@ -961,6 +961,7 @@ window.__ModuleLoader__.load({
 		*
 		* The domain retains its published window during reconnection. A replacement is
 		* published only after the opening page reaches the generation's cursor.
+		* Notifications never change a cursor and wait behind an in-flight gap repair.
 		*/
 		var RemoteJournalStream = class {
 			options;
@@ -1077,6 +1078,10 @@ window.__ModuleLoader__.load({
 							continue;
 						}
 						if (item.value.type === "opened") throw protocolViolation$1(`${this.options.name} emitted more than one opening cursor`);
+						if (item.value.type === "notification") {
+							this.publishNotification(item.value.notification);
+							continue;
+						}
 						await this.acceptEntry(item.value.entry, item, iterator);
 					}
 				} catch (error) {
@@ -1121,7 +1126,7 @@ window.__ModuleLoader__.load({
 				if (this.options.compare(first, last) <= 0) throw protocolViolation$1(`${this.options.name} emitted a partially overlapping entry`);
 				if (!this.options.follows(last, first)) {
 					const request = this.repairPageRequest();
-					const superseded = await this.replaceThrough(request, cursor, item.generation, item.signal, iterator, [entry]);
+					const superseded = await this.replaceThrough(request, cursor, item.generation, item.signal, iterator, [entry], []);
 					if (superseded !== void 0) this.replaceGeneration(superseded, true);
 					return;
 				}
@@ -1133,15 +1138,15 @@ window.__ModuleLoader__.load({
 					entry
 				});
 			}
-			async replaceThrough(request, requiredCursor, generation, signal, iterator, queued) {
-				let read = await this.readPageWhileFollowing(request, requiredCursor, generation, signal, iterator, queued);
+			async replaceThrough(request, requiredCursor, generation, signal, iterator, queued, notifications) {
+				let read = await this.readPageWhileFollowing(request, requiredCursor, generation, signal, iterator, queued, notifications);
 				if (read.type === "superseded") return read.item;
 				let page = read.page;
 				this.assertPageThrough(page, requiredCursor);
 				let entries = this.mergeReplacement(page, queued);
 				let target = this.maxCursor(requiredCursor, queued);
 				if (entries === void 0 || this.options.compare(this.tailCursor(entries), target) < 0) {
-					read = await this.readPageWhileFollowing(this.repairPageRequest(), target, generation, signal, iterator, queued);
+					read = await this.readPageWhileFollowing(this.repairPageRequest(), target, generation, signal, iterator, queued, notifications);
 					if (read.type === "superseded") return read.item;
 					page = read.page;
 					this.assertPageThrough(page, target);
@@ -1160,8 +1165,9 @@ window.__ModuleLoader__.load({
 					entries,
 					hasMore: this.options.hasMore(page)
 				});
+				for (const notification of notifications) this.publishNotification(notification);
 			}
-			async readPageWhileFollowing(request, through, generation, signal, iterator, queued) {
+			async readPageWhileFollowing(request, through, generation, signal, iterator, queued, notifications) {
 				const page = this.readPage(request, through, signal).then((value) => ({
 					type: "page",
 					value
@@ -1202,6 +1208,10 @@ window.__ModuleLoader__.load({
 						item
 					};
 					if (item.value.type === "opened") throw protocolViolation$1(`${this.options.name} emitted more than one opening cursor`);
+					if (item.value.type === "notification") {
+						notifications.push(item.value.notification);
+						continue;
+					}
 					queued.push(item.value.entry);
 				}
 			}
@@ -1266,6 +1276,12 @@ window.__ModuleLoader__.load({
 			}
 			releaseNext() {
 				this.pendingNext = void 0;
+			}
+			publishNotification(notification) {
+				this.options.publish({
+					type: "notification",
+					notification
+				});
 			}
 			repairPageRequest() {
 				return this.repairRequest(this.initialRequest);

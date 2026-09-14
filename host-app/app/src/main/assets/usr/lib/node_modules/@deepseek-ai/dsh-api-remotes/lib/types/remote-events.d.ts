@@ -37,6 +37,9 @@ export declare const API_REMOTE_FORWARDED_EVENTS: readonly [{
     readonly event: "credentials/reference-updated";
     readonly mode: "emit";
 }, {
+    readonly event: "goal/activation-changed";
+    readonly mode: "emit";
+}, {
     readonly event: "cordis/request-run";
     readonly mode: "emit";
 }, {

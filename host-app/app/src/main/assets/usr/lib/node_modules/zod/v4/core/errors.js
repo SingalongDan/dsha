@@ -20,7 +20,6 @@ const _messageDesc = {
     enumerable: true,
     configurable: true,
 };
-const _zodDesc = { value: undefined, enumerable: false };
 const _issuesDesc = { value: undefined, enumerable: false };
 /* Prototypes that already carry the lazy `toString`. Seeded with the
  * intrinsics so that `init` on a foreign object — it accepts any object —
@@ -28,12 +27,10 @@ const _issuesDesc = { value: undefined, enumerable: false };
 const _installedToString = /* @__PURE__ */ new WeakSet([Object.prototype, Error.prototype]);
 const initializer = (inst, def) => {
     inst.name = "$ZodError";
-    _zodDesc.value = inst._zod;
-    Object.defineProperty(inst, "_zod", _zodDesc);
+    // `_zod` is already non-enumerable: $constructor's init defined it with this same descriptor
     _issuesDesc.value = def;
     Object.defineProperty(inst, "issues", _issuesDesc);
-    // Clear the shared slots; a retained `value` pins the last error's issues.
-    _zodDesc.value = undefined;
+    // Clear the shared slot; a retained `value` pins the last error's issues.
     _issuesDesc.value = undefined;
     Object.defineProperty(inst, "message", _messageDesc);
     /* `toString` lives as a non-enumerable lazy getter on the shared

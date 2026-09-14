@@ -1,17 +1,20 @@
 /** Cursor, page, and live-tail coordination over a reconnecting Remote stream. */
 import { RemoteStreamCarrierError } from './stream-client.ts';
 import type { RemoteStream, RemoteStreamOptions } from './remote-stream.ts';
-/** Transport-neutral opening snapshot or journal entry. */
-export type RemoteJournalFrame<Entry, Cursor, Page> = {
+/** Transport-neutral opening snapshot, durable entry, or cursorless notification. */
+export type RemoteJournalFrame<Entry, Cursor, Page, Notification = never> = {
     readonly type: 'opened';
     readonly cursor: Cursor;
     readonly page: Page;
 } | {
     readonly type: 'entry';
     readonly entry: Entry;
-};
-/** One committed journal-window update. */
-export type RemoteJournalChange<Page, Entry> = {
+} | ([Notification] extends [never] ? never : {
+    readonly type: 'notification';
+    readonly notification: Notification;
+});
+/** One journal-window update or cursorless domain notification. */
+export type RemoteJournalChange<Page, Entry, Notification = never> = {
     readonly type: 'replace';
     readonly page: Page;
     readonly entries: readonly Entry[];
@@ -24,7 +27,10 @@ export type RemoteJournalChange<Page, Entry> = {
 } | {
     readonly type: 'append';
     readonly entry: Entry;
-};
+} | ([Notification] extends [never] ? never : {
+    readonly type: 'notification';
+    readonly notification: Notification;
+});
 /** Gateway capability used to create one reconnecting Remote stream. */
 export interface RemoteStreamFactory {
     /**
@@ -35,7 +41,7 @@ export interface RemoteStreamFactory {
     $stream<Item>(options: RemoteStreamOptions<Item>): RemoteStream<Item>;
 }
 /** Domain publication and cursor operations for one addressed journal stream. */
-export interface RemoteJournalStreamOptions<Page, Entry, Cursor> {
+export interface RemoteJournalStreamOptions<Page, Entry, Cursor, Notification = never> {
     /** Diagnostic stream name used in protocol failures. */
     readonly name: string;
     /** Cursor representing a journal with no entries. */
@@ -52,8 +58,8 @@ export interface RemoteJournalStreamOptions<Page, Entry, Cursor> {
     readonly compare: (left: Cursor, right: Cursor) => number;
     /** Test whether the right cursor immediately follows the left cursor. */
     readonly follows: (left: Cursor, right: Cursor) => boolean;
-    /** Apply one complete journal-window change. */
-    readonly publish: (change: RemoteJournalChange<Page, Entry>) => void;
+    /** Apply one complete journal-window change or cursorless notification. */
+    readonly publish: (change: RemoteJournalChange<Page, Entry, Notification>) => void;
     /** Observe a retryable carrier loss before reconnection. */
     readonly carrierFailed?: (error: RemoteStreamCarrierError) => void;
     /** Publish a terminal stream, page, or protocol failure after opening. */
@@ -64,8 +70,9 @@ export interface RemoteJournalStreamOptions<Page, Entry, Cursor> {
  *
  * The domain retains its published window during reconnection. A replacement is
  * published only after the opening page reaches the generation's cursor.
+ * Notifications never change a cursor and wait behind an in-flight gap repair.
  */
-export declare abstract class RemoteJournalStream<Page, Entry, Cursor, PageRequest = void> {
+export declare abstract class RemoteJournalStream<Page, Entry, Cursor, PageRequest = void, Notification = never> {
     private readonly options;
     private readonly stream;
     private initialRequest;
@@ -84,14 +91,14 @@ export declare abstract class RemoteJournalStream<Page, Entry, Cursor, PageReque
      * @param remote - Gateway factory for the reconnecting physical-generation stream.
      * @param options - cursor algebra and domain publication sinks.
      */
-    protected constructor(remote: RemoteStreamFactory, options: RemoteJournalStreamOptions<Page, Entry, Cursor>);
+    protected constructor(remote: RemoteStreamFactory, options: RemoteJournalStreamOptions<Page, Entry, Cursor, Notification>);
     /**
      * Open one physical journal generation with a complete current snapshot.
      * @param request - opening-window request retained for later repair.
      * @param signal - cancellation lifetime of the physical generation.
      * @returns opening cursor followed by live entries.
      */
-    protected abstract follow(request: PageRequest, signal: AbortSignal): AsyncIterable<RemoteJournalFrame<Entry, Cursor, Page>>;
+    protected abstract follow(request: PageRequest, signal: AbortSignal): AsyncIterable<RemoteJournalFrame<Entry, Cursor, Page, Notification>>;
     /**
      * Read one journal page through the addressed domain source.
      * @param request - domain page request.
@@ -141,6 +148,7 @@ export declare abstract class RemoteJournalStream<Page, Entry, Cursor, PageReque
     private nextResult;
     private takeNext;
     private releaseNext;
+    private publishNotification;
     private repairPageRequest;
     private setResumeCursor;
     private currentCursor;

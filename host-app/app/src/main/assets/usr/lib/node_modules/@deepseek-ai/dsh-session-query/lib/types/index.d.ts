@@ -12,7 +12,9 @@ import { type SessionObservation, type SessionObservationOptions } from './obser
 export type * from './types.ts';
 export { SessionSearchCursor } from './cursor.ts';
 export type { Config, SessionQueryErrorCode } from './config.ts';
-export { SESSION_QUERY_DEFAULT_PERSISTED_INSPECT_CONCURRENCY, SESSION_QUERY_READ_WINDOW_MAX, SessionQueryError, } from './config.ts';
+export { SESSION_QUERY_DEFAULT_PERSISTED_INSPECT_CONCURRENCY, SESSION_QUERY_DEFAULT_PREPARED_SESSION_CACHE_SIZE, SESSION_QUERY_READ_WINDOW_MAX, SessionQueryError, } from './config.ts';
+export { readColdSessionLog } from './cold-read.ts';
+export type { ColdSessionLog } from './cold-read.ts';
 export { extractSessionEventText } from './extraction.ts';
 export { buildSessionEventRecords, buildSessionEventSearchDocuments } from './documents.ts';
 export { compileSessionTextFilter, filterSessionEventDocuments, filterSessionResults, materializeSessionEventResultFilters, materializeSessionResultFilters, } from './filters.ts';
