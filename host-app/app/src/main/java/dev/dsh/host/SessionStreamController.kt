@@ -156,6 +156,12 @@ class SessionStreamController(
         val eventId: String,
         val event: String,          // approval/request | user-questions/request
         val request: JSONObject,
+        /** 发起该请求的智能体 id（引擎在 waterfall 帧里给了，但此前被丢弃）。
+         *  ⚠️ 已知限制：引擎的 waterfall 帧**不含会话 id**，且 session/list **不暴露 agentId**，
+         *  因此客户端**无法**把 agentId 映射回会话 —— $events 是全局流，别处会话/子智能体的
+         *  审批也会投递到这里。当前做法是**如实标注来源**（见浮层「来源」行），
+         *  让用户在授权前能看出这不是当前会话的请求；完整归属需引擎侧暴露会话/agent 映射。 */
+        val agentId: String = "",
     )
     private val _pendingEvent = MutableStateFlow<PendingEvent?>(null)
     val pendingEvent: StateFlow<PendingEvent?> = _pendingEvent.asStateFlow()
@@ -221,14 +227,17 @@ class SessionStreamController(
                                 val event = value.optString("event")
                                 val eventId = value.optString("eventId")
                                 val request = value.optJSONObject("request") ?: JSONObject()
+                                // 帧里本来就带 agentId（见 dsh-api-gateway 的 waterfall 帧结构），
+                                // 此前直接丢弃 → 界面上无法分辨"这是哪个会话/智能体的请求"。
+                                val agentId = value.optString("agentId")
                                 val clientId = eventsClientId
                                 if (clientId.isEmpty()) {
                                     Log.e(TAG, "waterfall $eventId arrived before \$events ready — cannot answer")
                                 }
                                 // 去重：同一 eventId 重复投递不重建（避免弹窗抖动）
                                 if (_pendingEvent.value?.eventId != eventId) {
-                                    Log.d(TAG, "waterfall: event=$event eventId=$eventId clientId=${clientId.take(8)}…")
-                                    _pendingEvent.value = PendingEvent(clientId, eventId, event, request)
+                                    Log.d(TAG, "waterfall: event=$event eventId=$eventId agent=${agentId.take(8)}… clientId=${clientId.take(8)}…")
+                                    _pendingEvent.value = PendingEvent(clientId, eventId, event, request, agentId)
                                 }
                             }
                             "ready" -> {

@@ -573,6 +573,17 @@ fun PendingInteractionCard(
     onCancel: () -> Unit,
 ) {
     val req = pe.request
+    // 来源行：$events 是**全局**流，别处会话/子智能体的请求也会投递到这里。
+    // 引擎的 waterfall 帧不含会话 id、session/list 也不暴露 agentId，客户端无法自动归属，
+    // 所以至少要**让用户看见来源**，避免在不知情的情况下替别的会话授权。
+    if (pe.agentId.isNotEmpty()) {
+        Text(
+            text = "来源：智能体 ${pe.agentId.take(8)}…（若非当前会话，请先切换确认再授权）",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 11.sp,
+            modifier = Modifier.padding(bottom = 6.dp),
+        )
+    }
     if (pe.event == "approval/request") {
         val reason = req.optString("reason").ifEmpty { req.optString("message") }
         val tool = req.optString("toolName").ifEmpty { req.optString("tool") }
@@ -968,15 +979,25 @@ private fun ApprovalCard(node: TranscriptNode, onApproval: ((TranscriptNode, Boo
                     fontSize = 12.sp,
                 )
             } else {
-            OutlinedButton(
-                onClick = { onApproval?.invoke(node, false) },
-                modifier = Modifier.height(32.dp),
-            ) { Text("拒绝", fontSize = 12.sp) }
-            Spacer(Modifier.width(8.dp))
-            Button(
-                onClick = { onApproval?.invoke(node, true) },
-                modifier = Modifier.height(32.dp),
-            ) { Text("允许一次", fontSize = 12.sp) }
+                // **未决但可见 ⇒ 当前没有可应答的挂起事件**：只要存在待应答审批，
+                // 时间线里的未决卡就会被 suppressApproval 全部隐藏，应答入口是底部浮层
+                //（浮层被划走后，对话流里的「处理」行可以重新打开它）。
+                // 因此这里的按钮永远没有可作用的对象 —— 此前它们仍可点、且行为是**取消整个回合**，
+                // 用户以为在"允许一次"，实际把回合停了。改为置灰 + 明确提示，不给误导性按钮。
+                Text(
+                    "该审批已失效或已在别处处理",
+                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
+                    fontSize = 11.sp,
+                    modifier = Modifier.align(androidx.compose.ui.Alignment.CenterVertically),
+                )
+                Spacer(Modifier.width(8.dp))
+                OutlinedButton(onClick = {}, enabled = false, modifier = Modifier.height(32.dp)) {
+                    Text("拒绝", fontSize = 12.sp)
+                }
+                Spacer(Modifier.width(8.dp))
+                Button(onClick = {}, enabled = false, modifier = Modifier.height(32.dp)) {
+                    Text("允许一次", fontSize = 12.sp)
+                }
             }
         }
     }

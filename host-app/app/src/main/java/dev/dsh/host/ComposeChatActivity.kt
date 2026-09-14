@@ -1216,9 +1216,13 @@ class ComposeChatActivity : ComponentActivity() {
                                                 Log.d("DshUi", "approval tap approved=$approved eventId=${pe.eventId}")
                                                 controller?.respondApproval(if (approved) "allowed-once" else "rejected")
                                             } else {
-                                                // 无挂起瀑布（历史审批卡/已被处理）：退化为停止当前轮
-                                                Log.d("DshUi", "approval tap without pending waterfall — stop turn")
-                                                stopTurn()
+                                                // **绝不能退化成 stopTurn()**。此前这里直接停止本轮：
+                                                // 切走会话再切回时 pendingEvent 已被清空（而引擎不会重发同一 waterfall），
+                                                // 于是卡片上的「允许一次」看起来可点、点下去却**取消了整个回合** ——
+                                                // 审批既没被允许也没被拒绝，用户完全不知道发生了什么。
+                                                // 正确行为：不动引擎状态，只如实告知该审批已失效/需在别处处理。
+                                                Log.d("DshUi", "approval tap without pending waterfall — 已失效，仅提示")
+                                                notify("该审批已失效或已在别处处理，未做任何操作")
                                             }
                                         },
                                         // 待应答交互（提问/审批）内联在对话流中
