@@ -108,7 +108,7 @@ DSHA 与 dsh web 是同一后端的对等端，操作逻辑逐项对照过（依
 - **不内置任何 API Key**；密钥只存在本机
 - 应用内「关于」会声明所基于的引擎版本与运行时版本
 - 引擎在应用私有目录内运行，与其他应用隔离
-- 许可：**AGPL-3.0**（与上游 DeepSeek Harness 一致）
+- 许可：**AGPL-3.0**（本项目自有代码；上游引擎为 **MIT**，不带来 AGPL 义务 —— 详见 [NOTICE.md](NOTICE.md)）
 
 ## 已知限制
 
@@ -118,7 +118,7 @@ DSHA 与 dsh web 是同一后端的对等端，操作逻辑逐项对照过（依
 
 ## 致谢与来源
 
-- 引擎与 Web 客户端：[@deepseek-ai/dsh](https://www.npmjs.com/package/@deepseek-ai/dsh)（AGPL-3.0）
+- 引擎与 Web 客户端：[@deepseek-ai/dsh](https://www.npmjs.com/package/@deepseek-ai/dsh)（**MIT**，据随包 LICENSE 正文与 package.json）
 - 运行时：Termux bionic 前缀 + Node.js
 - 本项目：AGPL-3.0，见 [LICENSE](LICENSE)
 

@@ -125,5 +125,5 @@ Compose UI                ChatScreen · TrajectoryScreen · SessionDrawer · Set
 ## Licenses
 
 - 本项目：AGPL-3.0（尊重 dsh 上游）
-- 上游：`@deepseek-ai/dsh-*`（AGPL-3.0）、bionic/openssl/Termux 运行时
+- 上游：`@deepseek-ai/dsh-*`（**MIT**，据随包 LICENSE 正文与 package.json）、bionic/openssl/Termux 运行时
 - 设计文档：`../dsh-android-app-design.md`（完整功能清单 + 源码证据索引 + 每轮打磨记录）
