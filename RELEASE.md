@@ -140,6 +140,30 @@ F-Droid 用**它自己的密钥**签名，那个签名就成为应用身份。�
 | 原生件构建链路 | ✅ `host-app/scripts/build-native-addons.ps1`（从随包源码编译，`system.node` **逐字节复现**、`pty.node` 功能验证通过） |
 | 版本口径 | ✅ CHANGELOG 改为 `0.1.0-rcN` 写法并记录随包引擎版本 |
 
+### 5.3.1 ⚠️ 16KB 页大小：真实存在的功能缺陷（与 targetSdk 无关）
+
+**普查结果**（对随 APK 分发的全部 ELF 做 LOAD 段对齐检查，阈值 16384）：
+
+| 范围 | 结果 |
+|---|---|
+| `node` 本体 | ✅ 已对齐（0x4000+） |
+| node 实际加载的 8 个库（icu×3 / ssl / crypto / cares / sqlite / libc++_shared） | ✅ 已对齐 |
+| 本项目自编的 `pty.node` / `system.node` | ✅ 已对齐（**曾经是 0x1000，已修**：链接加 `-Wl,-z,max-page-size=16384`） |
+| Termux 前缀内 **74 个 ELF 中的 50 个** | ❌ **未对齐 —— 含 `bash` 本身与全部 coreutils**（`cat`/`cp`/`chmod`/`chown`/`awk`/`cut`/`date`/`diff`…） |
+| 依赖未对齐库的文件数 | `libandroid-selinux.so` ← 37 个；`libgmp.so` ← 39 个；`libmpfr.so` ← 1（awk）；`libprocps.so` ← 1（ps） |
+
+**后果**：在 16KB 页设备上，引擎能启动（node 已对齐），但 **agent 一执行 shell 命令就会失败**（`bash` 自己加载不了）。
+
+**根因与路径**：
+- 根因：随包的是**旧版 Termux bootstrap**，其构建基线为 4KB。
+- 上游状态：修复在 **Termux master**，**最新 release（v0.119.0-beta.3）尚未包含**
+  （Termux 官方 F-Droid 版同样因此在新设备上跑不起来）。
+- **可选路径**：① **等 Termux 发布已对齐的 bootstrap 后刷新我们的前缀**（推荐的维护任务，非重写）；
+  ② 自行重编 bash + ~40 个 coreutils + `libandroid-selinux` + `libgmp`（工作量大，暂不采用）。
+- ⚠️ **未闭环**：本机是 **4KB 页设备**，**无法在 16KB 环境实测**；且 Termux 跟踪 issue（#4185）
+  的最新状态**未完整核到**（页面抓取被截断），需后续复核。
+
+**与 targetSdk 的关系**：**完全无关**。它是设备/ABI 层面的问题，所以"保持 targetSdk=28"并不能回避它。
 ### 5.4 待办（按优先级）
 
 1. ~~APK 瘦身~~ **降级**：不再是上架门槛（只走 F-Droid），保留为**用户体验优化**（122 MiB 对侧载/存储仍偏大）
