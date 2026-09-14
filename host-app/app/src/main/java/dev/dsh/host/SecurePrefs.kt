@@ -28,21 +28,49 @@ object SecurePrefs {
     @Volatile
     private var decryptFailed = false
 
+    /** 缓存实例：`apiKey()` 会被**组合期主线程**调用（设置页），每次重建要走 Keystore + 文件解密，
+     * 那是主线程磁盘/加密开销（StrictMode diskRead 违规）。失败也缓存，避免每次重试。 */
+    @Volatile
+    private var cached: SharedPreferences? = null
+    @Volatile
+    private var tried = false
+
     /** 是否曾因解密失败而丢失过密钥（供 UI 提示"请重新填写"）。 */
     fun lostDueToFailure(): Boolean = decryptFailed
 
-    private fun secure(ctx: Context): SharedPreferences? = runCatching {
-        val master = MasterKey.Builder(ctx, MasterKey.DEFAULT_MASTER_KEY_ALIAS)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-        EncryptedSharedPreferences.create(
-            ctx,
-            SECURE_FILE,
-            master,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-        )
-    }.onFailure { Log.e(TAG, "encrypted prefs unavailable, falling back", it) }.getOrNull()
+    /** 加密库文件是否存在（用于区分"从未设置"与"曾设置但解密失败"）。 */
+    private fun storeExists(ctx: Context): Boolean =
+        runCatching { java.io.File(ctx.filesDir.parentFile, "shared_prefs/$SECURE_FILE.xml").exists() }
+            .getOrDefault(false)
+
+    private fun secure(ctx: Context): SharedPreferences? {
+        cached?.let { return it }
+        if (tried) return null
+        synchronized(this) {
+            cached?.let { return it }
+            if (tried) return null
+            tried = true
+            return runCatching {
+                val master = MasterKey.Builder(ctx, MasterKey.DEFAULT_MASTER_KEY_ALIAS)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build()
+                EncryptedSharedPreferences.create(
+                    ctx,
+                    SECURE_FILE,
+                    master,
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+                )
+            }.onSuccess { cached = it }
+                .onFailure {
+                    // 真实故障（Keystore 被重置 / 文件损坏）走的就是这条路径：
+                    // create() 抛异常 → 返回 null，而调用方 `sp?.getString()` 不会抛，
+                    // 所以**必须在这里**置失败标记，否则 UI 的"解密失败请重新填写"永不出现。
+                    Log.e(TAG, "encrypted prefs unavailable", it)
+                    if (storeExists(ctx)) decryptFailed = true
+                }.getOrNull()
+        }
+    }
 
     /** 读取 API Key；首次调用会把旧的明文值迁移过来并删除明文。 */
     fun apiKey(ctx: Context): String {

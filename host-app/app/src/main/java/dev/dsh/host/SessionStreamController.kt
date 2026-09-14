@@ -246,12 +246,12 @@ class SessionStreamController(
                 }
                 override fun onClosed(streamId: String, reason: String?) {
                     Log.w(TAG, "\$events closed: $reason")
-                    synchronized(this@SessionStreamController) { eventsStreamId = null }
+                    eventsStreamId = null                     // 字段已是 @Volatile，无需实例锁
                 }
             })
         }
         // control 流（队列/jobs/projection）——会话级，切换时重开
-        synchronized(this@SessionStreamController) { controlStreamId = null }
+        controlStreamId = null                   // 同上
         _queue.value = emptyList()
         startControl()
     }
@@ -320,7 +320,7 @@ class SessionStreamController(
                 }
             }
             override fun onClosed(streamId: String, reason: String?) {
-                synchronized(this@SessionStreamController) { controlStreamId = null }
+                controlStreamId = null                   // 同上
             }
         })
     }
@@ -465,13 +465,16 @@ class SessionStreamController(
             stepTimes.clear(); callTimes.clear()
             lastStepTime = 0L
             lastTurn = -1
+            // **统计清空必须在锁内**：在途的旧会话事件可能已通过代际检查，
+            // 其 updateTurn/_stats 写回若落在清空之后，新会话就会带上旧会话的累计
+            // （tokens/耗时/turn 数被叠加，且整个会话期间都显示错误数字）。
+            _nodes.value = emptyList()
+            _stats.value = SessionStats()
+            _turnStats.value = emptyMap()
         }
-        _nodes.value = emptyList()
         _running.value = false
         _cursor.value = -1
         _title.value = null                   // 切会话：标题/统计/瀑布全部清空
-        _stats.value = SessionStats()
-        _turnStats.value = emptyMap()
         _pendingEvent.value = null
         _todos.value = emptyList()
         _goal.value = null
@@ -499,7 +502,7 @@ class SessionStreamController(
         runCatching { scope.cancel() }
         runCatching { stream.close() }
         followStreamId = null
-        synchronized(this) { eventsStreamId = null; controlStreamId = null }
+        eventsStreamId = null; controlStreamId = null   // 同上，去掉第二把锁
         _connection.value = ConnectionState.IDLE
     }
 
@@ -873,7 +876,10 @@ class SessionStreamController(
         }
     }
 
-    @Synchronized
+    // **只用 stateLock 一把锁**：此前带 @Synchronized（实例锁）再取 stateLock，
+    // 形成"实例锁 → stateLock"的顺序；而 applyEvent 持 stateLock 时可能走到
+    // synchronized(this) 的路径（eventsStreamId/controlStreamId 的赋值），
+    // 两把锁顺序相反就是经典死锁。去掉实例锁，锁序只剩一条。
     // 发布统一在 stateLock 内取快照：builder.snapshot() 只是 entries.map{...}，
     // 若与另一线程的 entries.add/removeAll 重叠会抛 ConcurrentModificationException
     // （异常发生在 WS 回调线程 → 三条流一起死）。

@@ -434,7 +434,10 @@ private fun AndroidHostSection(provider: SettingsProvider) {
                         provider.setRootMode(false)
                         rootMode = false
                     }
-                    rootMode = !rootMode
+                    // 注意：状态**只在上面两个分支里改**（开启走确认回调、关闭走 else）。
+                    // 这里若再写 `rootMode = !rootMode`（曾经如此）会在弹确认框的同时立刻翻转 UI：
+                    // 点"取消"后行仍显示"开启"，且此后每次点击都走 else 再翻回 true
+                    // —— 确认框再也不出现，Root 模式无法从界面开启。
                 },
             )
         }
