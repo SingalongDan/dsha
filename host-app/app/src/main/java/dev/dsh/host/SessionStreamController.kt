@@ -175,8 +175,10 @@ class SessionStreamController(
     private var lastModel = ""
     private var lastContextWindow = 0L
 
-    private fun updateTurn(turn: Int, f: (TurnStat) -> TurnStat) {
-        if (turn < 0) return
+    // 无锁的 read-modify-write 会在"流线程写统计"与"切会话清空"之间互相覆盖
+    // （表现为某一轮的用量数字凭空消失）→ 纳入 stateLock。
+    private fun updateTurn(turn: Int, f: (TurnStat) -> TurnStat) = synchronized(stateLock) {
+        if (turn < 0) return@synchronized
         val cur = _turnStats.value.toMutableMap()
         val prev = cur[turn] ?: TurnStat(turn)
         cur[turn] = f(prev)
@@ -872,9 +874,12 @@ class SessionStreamController(
     }
 
     @Synchronized
+    // 发布统一在 stateLock 内取快照：builder.snapshot() 只是 entries.map{...}，
+    // 若与另一线程的 entries.add/removeAll 重叠会抛 ConcurrentModificationException
+    // （异常发生在 WS 回调线程 → 三条流一起死）。
     private fun publishIfChanged(changed: Boolean) {
         if (!changed) return
-        _nodes.value = dedupeKeys(builder.snapshot())
+        synchronized(stateLock) { _nodes.value = dedupeKeys(builder.snapshot()) }
     }
 
     /**
@@ -902,12 +907,15 @@ class SessionStreamController(
     }
 
     /** 流式发布节流：距上次发布 < 100ms 则跳过（内容仍在 builder 中累积，下次发布带出）。 */
-    private var lastStreamPublish = 0L
+    // 多个 WS 回调线程并发调用（follow/control/$events 各自的 OkHttp 线程）→ 必须原子
+    private val lastStreamPublish = java.util.concurrent.atomic.AtomicLong(0L)
     private fun publishThrottled() {
         val now = System.currentTimeMillis()
-        if (now - lastStreamPublish < 100) return
-        lastStreamPublish = now
-        _nodes.value = dedupeKeys(builder.snapshot())
+        val last = lastStreamPublish.get()
+        if (now - last < 100) return
+        // CAS 失败说明另一线程刚发布过（更晚的快照已落地）→ 直接跳过，避免旧快照后写覆盖新内容
+        if (!lastStreamPublish.compareAndSet(last, now)) return
+        synchronized(stateLock) { _nodes.value = dedupeKeys(builder.snapshot()) }
     }
 
     /** 历史回补（重连后按 cursor 对账：未展示层面）：通常无需，因为这层已处理 seq。 */
