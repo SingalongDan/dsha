@@ -31,8 +31,8 @@ android {
         // 关键：学 Termux 压到 28，落在 untrusted_app_27 域，
         // 保留"从数据目录 exec 二进制"的 SELinux 权限（免 root、免 sepolicy 规则）。
         targetSdk = 28
-        versionCode = 1
-        versionName = "0.1"
+        versionCode = 2
+        versionName = "0.1.0-rc1"
     }
 
     signingConfigs {
