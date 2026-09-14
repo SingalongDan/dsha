@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#4D6BFE</color>
+    <color name="primary_dark">#3B55E8</color>
+    <color name="on_primary">#FFFFFF</color>
+
+    <!-- light -->
+    <color name="bg">#F5F6FA</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_variant">#EDEFF5</color>
+    <color name="border">#E4E7EE</color>
+    <color name="text_primary">#1A1C22</color>
+    <color name="text_secondary">#7A7F8C</color>
+    <color name="assistant_bubble">#FFFFFF</color>
+    <color name="status_bg">#EDF0FF</color>
+    <color name="status_fg">#4D6BFE</color>
+    <color name="running_fg">#2BA471</color>
+    <color name="error_fg">#D64545</color>
+    <color name="tool_bg">#F8F9FC</color>
+    <!-- 品牌底色：DeepSeek 蓝（与 App 主题 primary 一致） -->
+    <color name="ic_launcher_background">#4159E8</color>
+</resources>

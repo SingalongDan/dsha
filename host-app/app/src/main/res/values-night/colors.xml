@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg">#121417</color>
+    <color name="surface">#1B1E23</color>
+    <color name="surface_variant">#262A31</color>
+    <color name="border">#2C313A</color>
+    <color name="text_primary">#E6E8EC</color>
+    <color name="text_secondary">#9AA0AC</color>
+    <color name="assistant_bubble">#20242B</color>
+    <color name="status_bg">#232A4D</color>
+    <color name="status_fg">#8FA3FF</color>
+    <color name="running_fg">#4CCE93</color>
+    <color name="error_fg">#FF7B7B</color>
+    <color name="tool_bg">#22262E</color>
+</resources>

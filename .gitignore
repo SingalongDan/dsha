@@ -1,0 +1,66 @@
+# ============================================================
+# DSHA 仓库只包含"产品 + 设计文档"。
+# 采用白名单：顶层除下列条目外一律不入库（早期研究脚手架、下载物、
+# 临时提取文件、本机工具链等都不会再被误提交）。
+# ============================================================
+/*
+!/host-app/
+!/.gitignore
+!/LICENSE
+!/CHANGELOG.md
+!/README.md
+!/dsh-android-app-design.md
+!/dsh-web-vs-android.md
+
+# ---- 构建产物 ----
+build/
+*/build/
+.gradle/
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+release/
+
+# ---- 本地配置与密钥（绝不入库）----
+local.properties
+keystore.properties
+*.jks
+*.keystore
+keystore/
+
+# ---- IDE ----
+.idea/
+*.iml
+.vscode/
+.cxx/
+
+# ---- 本机工具链与升级工作区（体积大且与平台相关）----
+android-sdk/
+platform-tools/
+_engine-upgrade/
+_trimmed-assets/
+
+# ---- 内部研究资料与探查脚本（含设备/网络信息）----
+spike/
+research/
+_research/
+remote/
+flash/
+rom_extract/
+miflash_unlock/
+modules/
+ksu_patched/
+sukisu_install/
+marble/
+pdg/
+_theme_css_extracts/
+dsh-android-audit.md
+PHASE2-RESULTS.md
+dsh-android-phase1.md
+
+# ---- 系统 ----
+.DS_Store
+Thumbs.db
+*.log

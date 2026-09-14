@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DSHA</string>
+    <string name="tab_chat">对话</string>
+    <string name="tab_sessions">会话</string>
+    <string name="tab_settings">设置</string>
+    <string name="send">发送</string>
+    <string name="stop">停止</string>
+    <string name="new_session">新会话</string>
+    <string name="input_hint">输入消息…</string>
+</resources>
