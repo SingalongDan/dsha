@@ -1167,12 +1167,18 @@ class ComposeChatActivity : ComponentActivity() {
                                             }
                                         },
                                         onAtQuery = { q ->
-                                            // @ 补全：fileReferences/list 查询候选（防抖靠 Compose 重组）
+                                            // @ 补全：fileReferences/list 查询候选。
+                                            // **必须防抖**：此前每敲一个字符就发一次且不可取消，
+                                            // 若 @a 的响应晚于 @abc 到达，会用过期候选覆盖新候选。
                                             val sid = sessionId ?: return@ChatScreen
-                                            lifecycleScope.launch(Dispatchers.IO) {
+                                            latestAtQuery = q   // 结果落地前比对此值，避免过期候选覆盖新候选
+                                            atQueryJob?.cancel()
+                                            atQueryJob = lifecycleScope.launch(Dispatchers.IO) {
+                                                kotlinx.coroutines.delay(220)      // 防抖窗口
                                                 runCatching {
                                                     api.fileReferences(sid, q)
                                                 }.onSuccess { arr ->
+                                                if (q != latestAtQuery) return@onSuccess   // 过期响应，丢弃
                                                     val list = mutableListOf<FileCandidate>()
                                                     for (i in 0 until arr.length()) {
                                                         val it = arr.optJSONObject(i) ?: continue
@@ -1725,6 +1731,12 @@ class ComposeChatActivity : ComponentActivity() {
      * 并发执行会在"一个会话都没有"时建出多个空会话并互相覆盖 sessionId。
      */
     private val bootstrapping = java.util.concurrent.atomic.AtomicBoolean(false)
+
+    /** @ 补全的在飞请求（防抖用：新查询到来时取消旧的）。 */
+    private var atQueryJob: kotlinx.coroutines.Job? = null
+
+    /** 最近一次 @ 查询串（用于丢弃乱序返回的旧候选）。 */
+    @Volatile private var latestAtQuery: String = ""
 
     private fun bootstrap() {
         if (!bootstrapping.compareAndSet(false, true)) {

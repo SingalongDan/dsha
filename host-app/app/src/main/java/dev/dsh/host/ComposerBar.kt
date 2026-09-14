@@ -77,14 +77,15 @@ fun ComposerBar(
     val fieldHeight by androidx.compose.animation.core.animateDpAsState(if (focused) 88.dp else 52.dp)
 
     // 发送/Enter 共用（清空输入 + 收起键盘）
+    // 发送：**运行中也允许**（引擎侧按"排队/插话"语义入队）。
+    // 此前 `if (!running)` 直接把输入丢掉且没有任何提示，而输入栏又恰好显示着「排队/插话」两个芯片，
+    // 语义自相矛盾 —— 用户以为发出去了，实际什么都没发生。
     val doSend: () -> Unit = {
-        if (!running) {
-            val t = text.trim()
-            if (t.isNotEmpty()) {
-                onSend(t)
-                text = ""
-                keyboard?.hide()
-            }
+        val t = text.trim()
+        if (t.isNotEmpty()) {
+            onSend(t)
+            text = ""
+            keyboard?.hide()
         }
     }
 
