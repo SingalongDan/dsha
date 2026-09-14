@@ -344,9 +344,9 @@ private fun SessionRow(
                 )
                 // 引擎支持 session/fork（分叉出同源会话，便于从当前状态试另一条路）
                 DropdownMenuItem(text = { Text("分叉新会话") }, onClick = { menuOpen = false; onMenuFork() })
-                if (s.running) {
-                    DropdownMenuItem(text = { Text("停止运行") }, onClick = { menuOpen = false; onMenuStop() })
-                }
+                // **"停止运行"始终可用**：不再依赖 session/list 的 running 角标（该角标可能滞后），
+                // 否则会出现"想停却找不到入口"。误点只是对已结束的会话发一次无效 cancel。
+                DropdownMenuItem(text = { Text("停止运行") }, onClick = { menuOpen = false; onMenuStop() })
             }
         }
     }

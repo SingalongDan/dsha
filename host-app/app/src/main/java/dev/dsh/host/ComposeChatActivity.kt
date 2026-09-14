@@ -67,7 +67,11 @@ class ComposeChatActivity : ComponentActivity() {
     }
 
     @Volatile private var sessionId: String? = null
-    @Volatile private var bootError: String? = null
+    // **必须是 Compose 状态**：此前是普通 @Volatile 字段，写它不会触发重组。
+    // 而 bootstrap 失败时 controller 的所有 StateFlow 都还是初值（没有任何新值）→
+    // Compose 一直不重组 → 界面永远停在「正在连接引擎…」，ErrorView 与「重试/重启引擎」
+    // 两个出口都不会出现，用户只能杀进程。
+    private var bootError = mutableStateOf<String?>(null)
 
     // 会话列表状态（Compose State）
     private var sessionsState = mutableStateOf<List<SessionItem>>(emptyList())
@@ -916,6 +920,12 @@ class ComposeChatActivity : ComponentActivity() {
                 }
 
                 val drawerState = rememberDrawerState(DrawerValue.Closed)
+                // **抽屉打开时刷新会话列表**：角标（"运行中"）取自 session/list，而列表此前只在
+                // "当前会话 running 边沿"刷新 —— 在 A 会话开始运行后切到 B，等 A 在后台跑完，
+                // 打开抽屉时 A 仍带"运行中"角标，菜单里还挂着"停止运行"（点下去对已结束的会话发 cancel）。
+                LaunchedEffect(drawerState.isOpen) {
+                    if (drawerState.isOpen) runCatching { refreshSessions() }
+                }
                 val drawerScope = rememberCoroutineScope()
                 ModalNavigationDrawer(
                     drawerState = drawerState,
@@ -1065,7 +1075,7 @@ class ComposeChatActivity : ComponentActivity() {
                                         focusRow = focusTrajectoryRow,
                                         onSwipeRight = { setView(0) },
                                     )
-                                    bootError != null -> ErrorView(bootError!!)
+                                    bootError.value != null -> ErrorView(bootError.value!!)
                                     nodes.isEmpty() && connection == SessionStreamController.ConnectionState.IDLE ->
                                         LoadingView()
                                     else -> ChatScreen(
@@ -1216,6 +1226,12 @@ class ComposeChatActivity : ComponentActivity() {
                                         onApprovalDecision = { outcome -> controller?.respondApproval(outcome) },
                                         onQuestionSubmit = { answers -> controller?.respondQuestions(answers) },
                                         onPendingCancel = { controller?.cancelPendingEvent() },
+                                        // **必须传**：这是对话流里那行「⏳ 等待你确认：xxx　处理」的点击入口。
+                                        // 不传会落到 ChatScreen 的默认空实现 → 浮层被划走后
+                                        // （onDismissRequest 置 false，而 LaunchedEffect 只在 eventId 变化时
+                                        // 才重新自动弹出）**再没有任何办法打开浮层**；未决审批卡又被
+                                        // suppressApproval 隐藏 → 用户无法应答，引擎永久挂起、回合卡死。
+                                        onOpenPending = { pendingSheetOpen.value = true },
                                         onLongPress = { n -> messageActions.value = n },
                                         focusNodeKey = focusChatNode.value,
                                         onFocusConsumed = { focusChatNode.value = null },
@@ -1709,14 +1725,14 @@ class ComposeChatActivity : ComponentActivity() {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     // 重试：重新走一遍 bootstrap（多数情况是引擎还在启动/被系统限制）
                     Button(onClick = {
-                        bootError = null
+                        bootError.value = null
                         Thread(::bootstrap, "dsh-retry-boot").start()
                     }) { Text("重试") }
                     // 兜底：请前台服务重新拉起引擎进程
                     OutlinedButton(onClick = {
                         runCatching { DshHostService.restart(applicationContext) }
                         notify("已请求重启引擎，稍候自动重试")
-                        bootError = null
+                        bootError.value = null
                         Thread(::bootstrap, "dsh-retry-boot").start()
                     }) { Text("重启引擎") }
                 }
@@ -1770,10 +1786,10 @@ class ComposeChatActivity : ComponentActivity() {
                 prefs.edit().putBoolean("welcomed", true).apply()
             }
             Log.d("DshStream", "streaming session $sid")
-            bootError = null          // 成功即清错误态（给失败态一条自动恢复路径）
+            runOnUiThread { bootError.value = null }   // 成功即清错误态（给失败态一条自动恢复路径）
         } catch (e: Exception) {
             Log.e("DshStream", "bootstrap failed", e)
-            bootError = "启动失败: ${e.message}"
+            runOnUiThread { bootError.value = "启动失败: ${e.message}" }
         } finally {
             bootstrapping.set(false)
         }
@@ -1808,7 +1824,7 @@ class ComposeChatActivity : ComponentActivity() {
                     // 引擎活了 → 清错误态并确保有会话在跟随。
                     // 此前若 bootstrap 在 switchSession 之前失败，sessionId 为空 → 这里直接 return，
                     // 界面会永远停在"启动失败"，只有手动重试才能恢复（实测遇到）。
-                    runOnUiThread { bootError = null }
+                    runOnUiThread { bootError.value = null }
                     val sid = sessionId ?: runCatching { pickSession() }.getOrNull()
                     if (sid != null) {
                         sessionId = sid
