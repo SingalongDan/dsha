@@ -279,7 +279,17 @@ private fun SessionRow(
     onMenuFork: () -> Unit = {},
 ) {
     var menuOpen by remember { mutableStateOf(false) }
-    val timeStr = remember(s.updatedAt) { relativeTime(s.updatedAt) }
+    // 相对时间需要一个"心跳"才会走动：此前是 `remember(s.updatedAt) { relativeTime(...) }`，
+    // 只要 updatedAt 不变就永远用第一次算出的值 —— "刚刚"会一直显示"刚刚"，"1 分钟前"
+    // 过一小时还是"1 分钟前"，只有列表因其它原因刷新时才重算。
+    // 这里每 30 秒 tick 一次（由 produceState 驱动，随组件离开组合自动停止）。
+    val tick by androidx.compose.runtime.produceState(initialValue = 0L, s.updatedAt) {
+        while (true) {
+            value = System.currentTimeMillis()
+            kotlinx.coroutines.delay(30_000)
+        }
+    }
+    val timeStr = remember(s.updatedAt, tick) { relativeTime(s.updatedAt) }
 
     Row(
         Modifier
