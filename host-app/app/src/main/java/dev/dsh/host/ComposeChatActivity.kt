@@ -2004,8 +2004,13 @@ class ComposeChatActivity : ComponentActivity() {
                 }
             }.onFailure {
                 Log.e("DshStream", "prompt failed", it)
-                // 发送失败必须让用户知道（此前只有日志 → 表现为"点了没反应"）
-                runOnUiThread { notify("发送失败：${it.message ?: "引擎未就绪"}") }
+                // 发送失败必须让用户知道（此前只有日志 → 表现为"点了没反应"），
+                // 并且**把草稿还回输入框**：ComposerBar 发送时已清空输入，
+                // 不返还就等于长消息一键丢失。
+                runOnUiThread {
+                    injectToComposer.value = text
+                    notify("发送失败（内容已放回输入框）：${it.message ?: "引擎未就绪"}")
+                }
             }
         }
     }

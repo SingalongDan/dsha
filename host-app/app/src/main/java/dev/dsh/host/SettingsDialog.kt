@@ -451,7 +451,20 @@ private fun AndroidHostSection(provider: SettingsProvider) {
         item {
             // 通知状态取**有效值**：仅有运行时权限还不够，系统/用户可能已把本应用通知整体关闭
             // （大量重装或用户手动关闭都会如此），此时任何通知都不会出现。
-            val enabled = provider.areNotificationsEnabled()
+            var enabled by remember { mutableStateOf(provider.areNotificationsEnabled()) }
+            // 授权对话框是**异步**的：点击后立刻回读必然还是旧值（此前 UI 会一直显示"未授权"，
+            // 用户以为没生效）。改为在回到前台时重新采样。
+            val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+            DisposableEffect(lifecycleOwner) {
+                val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+                    if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                        notifyGranted = provider.hasNotificationPermission()
+                        enabled = provider.areNotificationsEnabled()
+                    }
+                }
+                lifecycleOwner.lifecycle.addObserver(observer)
+                onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+            }
             SettingRow(
                 title = "通知",
                 value = when {
@@ -462,7 +475,7 @@ private fun AndroidHostSection(provider: SettingsProvider) {
                 onClick = {
                     if (!notifyGranted) {
                         provider.requestNotificationPermission()
-                        notifyGranted = provider.hasNotificationPermission()
+                        // 结果由上面的 ON_RESUME 观察者回写，这里不立即回读（会是旧值）
                     } else if (!enabled) {
                         provider.openNotificationSettings()
                     }
