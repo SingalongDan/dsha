@@ -142,3 +142,28 @@
 
 - 视图术语「对话 vs 会话」；轨迹工具条的时长模式与批量展开/收起；轨迹行类型命名；Goal 命令词提示。
 
+
+---
+
+## 5. 随包引擎升级到 0.1.5-rc.2 后的复核（2026-09-14）
+
+升级后做了一次**运行时事件对照**（用裸 WS 探针枚举一轮真实回合的全部事件类型）：
+
+| 事件 | 应用是否处理 | 说明 |
+|---|---|---|
+| `turn/start` `step/start` `step/end` `turn/end` | ✅ | 轮次/步骤状态与计时 |
+| `user/message` `assistant/message` | ✅ | 消息落定 |
+| `snapshot` | ✅ | 跟随流首帧 |
+| **`agent/inbox/spliced`** | ➖ **无需处理** | 新版的排队/插话注入事件；队列状态其实来自 **`session/control` 流**（baseline + `queue` 帧），该流在 0.1.5 下工作正常，因此队列 UI 不受影响 |
+| `turn/end.reason` | ✅ | 已在 0.1.5 前实现（本次正是靠它定位到 `flock is not supported on android-arm64`） |
+
+**结论**：0.1.5 未引入需要新适配的会话事件；应用的协议层无需改动。
+
+**新版带来的宿主侧要求**（已解决，详见 git log 与 `CONTINUE.md`）：
+1. `node-pty` 需 android 预编译件 → 自编译 `pty.node`
+2. `koffi` 需 `@koromix/koffi-android-arm64`（npm 平台检查会拒绝，用 `npm pack` 取）
+3. `sharp` 需 `@img/sharp-wasm32`
+4. 会话持久化需 POSIX flock → 给 `node-addon-system/lib/flock.js` 补一行平台判断
+   （接受 `android`），并用 NDK 自编译其 `src/{main.c,flock.c}` 为
+   `node-addon-system-android-arm64/bin/system.node`
+   ⚠️ 不可用 preload 改 `process.platform`：那会让 koffi 去解析 glibc 版 `koffi-linux-arm64` 而启动失败
