@@ -840,13 +840,20 @@ class SessionStreamController(
             }
             "tool/result" -> {
                 val callId = data.optString("callId")
-                val idx = trajectoryItems.indexOfLast { it.key.startsWith("tool/call:") && it.title.isNotEmpty() }
-                // 简化：更新最后一个 tool 行（结果行紧随调用行)
                 val isError = data.optBoolean("isError", false)
-                val lastTool = trajectoryItems.indexOfLast { it.kind == TrajectoryRow.RowKind.TOOL }
-                if (lastTool >= 0) {
+                // **按 callId 精确匹配**。此前是 `indexOfLast { kind == TOOL }`（"最后一个工具行"）：
+                // 一个 step 里并行发起多个工具调用时会张冠李戴 —— 结果记到错误的行上、一个工具的
+                // 耗时被另一个覆盖，先返回的那个还可能永远停在"运行中"。
+                // 兜底：callId 未命中时退化为"最后一个仍在运行的工具行"（兼容顺序执行场景）。
+                val byCallId = if (callId.isEmpty()) -1 else trajectoryItems.indexOfLast {
+                    it.kind == TrajectoryRow.RowKind.TOOL && it.callId == callId
+                }
+                val target = if (byCallId >= 0) byCallId else trajectoryItems.indexOfLast {
+                    it.kind == TrajectoryRow.RowKind.TOOL && it.status == TrajectoryRow.RowStatus.RUNNING
+                }
+                if (target >= 0) {
                     val start = callTimes[callId] ?: time
-                    trajectoryItems[lastTool] = trajectoryItems[lastTool].copy(
+                    trajectoryItems[target] = trajectoryItems[target].copy(
                         durationMs = (time - start).coerceAtLeast(0),
                         status = if (isError) TrajectoryRow.RowStatus.FAILED else TrajectoryRow.RowStatus.DONE,
                     )
