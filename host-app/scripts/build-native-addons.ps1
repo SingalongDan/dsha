@@ -69,8 +69,11 @@ $ptySrc = Join-Path $assets "node-pty\src\unix\pty.cc"
 $ptyOut = Join-Path $assets "node-pty\prebuilds\android-arm64\pty.node"
 if ((Test-Path $ptySrc) -and $napiInc) {
     New-Item -ItemType Directory -Force -Path (Split-Path $ptyOut) | Out-Null
+    # 16KB 页大小对齐：Android 15+ 的 16KB 页设备要求 LOAD 段对齐 >= 16384，
+    # 否则 dlopen 直接失败（Termux 官方 F-Droid 版正因此在新设备上跑不起来）。
     $args = @("-shared", "-fPIC", "-O2", "-std=c++17", "-DNAPI_VERSION=8", "-D_FILE_OFFSET_BITS=64",
-              "-I$inc", "-I$napiInc", $ptySrc, "-o", $ptyOut, "-llog")
+              "-I$inc", "-I$napiInc", $ptySrc, "-o", $ptyOut, "-llog",
+              "-Wl,-z,max-page-size=16384")
     Write-Host "`n[1/2] 编译 node-pty ..." -ForegroundColor Yellow
     & $clangxx @args
     if ($LASTEXITCODE -ne 0) { throw "node-pty 编译失败" }
@@ -91,7 +94,7 @@ if (Test-Path (Join-Path $sysDir "main.c")) {
     & $clang "-shared", "-fPIC", "-O2", "-DNAPI_VERSION=8",
              "-I$inc",
              (Join-Path $sysDir "main.c"), (Join-Path $sysDir "flock.c"),
-             "-o", $sysOut, "-llog"
+             "-o", $sysOut, "-llog", "-Wl,-z,max-page-size=16384"
     if ($LASTEXITCODE -ne 0) { throw "node-addon-system 编译失败" }
     $built += $sysOut
     # 兼容性副本：若将来 flock.js 改为按 libc 选择目录，这两个路径也已就位

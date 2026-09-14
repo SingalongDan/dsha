@@ -1,0 +1,876 @@
+﻿Behavior changes: all apps  |  Android Developers
+Skip to main content
+Essentials
+Build AI experiences
+Build AI-powered Android apps with Gemini APIs and more.
+Get started
+Get started
+Create your first app. Use Compose for UI and adaptive app development to support multiple device form factors.
+Hello, world!
+Developer Verification
+Adaptive apps
+Compose for UI
+AI-powered IDE
+Training
+Monetization with Play ↗️
+Optimize by form factor
+Build apps that optimize the user experience on phones, tablets, foldables, cars, XR, and more.
+Phones, tablets, foldables
+Android for Cars
+Android TV
+Android XR
+Googlebook
+ChromeOS
+Wear OS
+Build by category
+Learn to build for your use case by following Google's prescriptive and opinionated guidance.
+Games
+Camera & media
+Social & messaging
+Health & fitness
+Productivity
+Enterprise apps
+Get the latest
+Stay in touch with the latest releases throughout the year, join our preview programs, and give us your feedback.
+Latest updates
+Experimental updates
+Android Studio preview
+Jetpack & Compose libraries
+Wear OS releases
+Privacy Sandbox ↗️
+Design & Plan
+Excellent Experiences
+Build the best experiences for your best users.
+Learn more
+UI Design
+Design a beautiful user interface using Android best practices.
+Design for Android
+Mobile
+Desktop experiences
+XR Headsets & XR Glasses
+AI Glasses
+Widgets
+Wear OS
+Android TV
+Android for Cars
+Architecture
+Design robust, testable, and maintainable app logic and services.
+Introduction
+Libraries
+Navigation
+Modularization
+Testing
+Kotlin Multiplatform
+Quality
+Plan for app quality and align with Play store guidelines.
+Overview
+Core value
+User experience
+Accessibility
+Technical quality
+Excellent Experiences
+Security
+Safeguard users against threats and ensure a secure Android experience.
+Overview
+Privacy
+Permissions
+Identity
+Fraud prevention
+Develop
+Gemini in Android Studio
+Your AI development companion for Android development.
+Learn more
+Get Android Studio
+Core areas
+Get the samples and docs for the features you need.
+Samples
+Multidevice support
+User interfaces
+Background work
+Data and files
+Connectivity
+All core areas ⤵️
+Tools and workflow
+Use the IDE to write and build your app, or create your own pipeline.
+Write and debug code
+Build projects
+Test your app
+Performance
+Command-line tools
+Gradle plugin API
+Android Bench
+Device tech
+Write code for form factors. Connect devices and share data.
+Phones, tablets, foldables
+ChromeOS
+Android for Cars
+Android TV
+Android XR
+Wear OS
+Android Health
+Better Together
+All devices ⤵️
+Libraries
+Browse API reference documentation with all the details.
+Android platform
+Jetpack libraries
+Compose libraries
+Google Play services ↗️
+Google Play SDK index ↗️
+Google Play
+Play Console
+Publish your app or game and grow your business on Google Play.
+Go to Play Console
+Learn more ↗️
+Fundamentals
+Learn how to engage users, monitize, and secure your app.
+Play Monetization
+Play Integrity
+Play Policies
+Play Programs ↗️
+Games Dev Center
+Develop and deliver games. Get tools, downloads, and samples.
+Overview
+Play Asset Delivery
+Play Games Services
+Play Games on PC
+Level Up guidelines
+All Play guides ⤵️
+Libraries
+Browse API reference documentation with all the details.
+Play Feature Delivery
+Play In-app Updates
+Play In-app Reviews
+Play Install Referrer
+Google Play services ↗️
+Google Play SDK index ↗️
+All Play libraries ⤵️
+Tools & resources
+Tools for publishing, promoting, and managing your app.
+Android App Bundles
+Brand & marketing
+Play Console APIs ↗️
+Blog
+the Android Developer's Blog
+Read the latest
+Explore the authors →
+Explore categories
+Product News
+Stay in the loop with the latest updates, feature releases, and behind-the-scenes looks at how we’re evolving.
+Community
+Discover stories from our users, spotlight features, and the collaborative projects that bring us all together.
+How-tos
+From quick tips to deep-dive tutorials, these step-by-step guides are designed to help you work smarter and faster.
+Case Studies
+Real-world results from real-world users. Explore how different teams use our tools to achieve their goals.
+Events & Programs
+Get the details on upcoming webinars, workshops, meetups, and special initiatives designed to help you grow.
+Documentation
+Access detailed manuals, API references, and technical specifications to help you build and integrate with confidence.
+/
+English
+Deutsch
+Español – América Latina
+Français
+Indonesia
+Italiano
+Polski
+Português – Brasil
+Tiếng Việt
+Türkçe
+Русский
+עברית
+العربيّة
+فارسی
+हिंदी
+বাংলা
+ภาษาไทย
+中文 – 简体
+中文 – 繁體
+日本語
+한국어
+Android Studio
+Sign in
+Platform
+Overview
+Releases
+Technology
+Essentials
+More
+Overview
+Releases
+Technology
+Design & Plan
+More
+Develop
+More
+Google Play
+More
+Blog
+More
+Android Studio
+All Android releases
+Android 15
+Home
+Features and changes list
+Get your apps ready
+Migrate your apps
+Get Android 15
+Set up the Android 15 SDK
+Review behavior changes for apps
+All apps
+Apps targeting Android 15
+Changes to foreground service types
+Deprecations
+Non-SDK restrictions
+Explore new features and APIs
+Overview
+What's new in enterprise
+Reference updates
+API diffs - API 34 → API 35
+Compatibility framework changes
+QPR2 Beta
+Release notes
+Get QPR beta builds
+Feedback and issue tracker
+Flash a factory image
+Apply an OTA image
+Get a Generic System Image (GSI)
+App compatibility
+About app compatibility ⍈
+Compatibility framework tools ⍈
+Restrictions on non-SDK interfaces ⍈
+More
+Dashboards ⍈
+Build AI experiences
+Get started
+Get started
+Hello, world!
+Developer Verification
+Adaptive apps
+Compose for UI
+AI-powered IDE
+Training
+Monetization with Play ↗️
+Optimize by form factor
+Phones, tablets, foldables
+Android for Cars
+Android TV
+Android XR
+Googlebook
+ChromeOS
+Wear OS
+Build by category
+Games
+Camera & media
+Social & messaging
+Health & fitness
+Productivity
+Enterprise apps
+Get the latest
+Latest updates
+Experimental updates
+Android Studio preview
+Jetpack & Compose libraries
+Wear OS releases
+Privacy Sandbox ↗️
+Excellent Experiences
+Learn more
+UI Design
+Design for Android
+Mobile
+Desktop experiences
+XR Headsets & XR Glasses
+AI Glasses
+Widgets
+Wear OS
+Android TV
+Android for Cars
+Architecture
+Introduction
+Libraries
+Navigation
+Modularization
+Testing
+Kotlin Multiplatform
+Quality
+Overview
+Core value
+User experience
+Accessibility
+Technical quality
+Excellent Experiences
+Security
+Overview
+Privacy
+Permissions
+Identity
+Fraud prevention
+Gemini in Android Studio
+Learn more
+Get Android Studio
+Core areas
+Samples
+Multidevice support
+User interfaces
+Background work
+Data and files
+Connectivity
+All core areas ⤵️
+Tools and workflow
+Write and debug code
+Build projects
+Test your app
+Performance
+Command-line tools
+Gradle plugin API
+Android Bench
+Device tech
+Phones, tablets, foldables
+ChromeOS
+Android for Cars
+Android TV
+Android XR
+Wear OS
+Android Health
+Better Together
+All devices ⤵️
+Libraries
+Android platform
+Jetpack libraries
+Compose libraries
+Google Play services ↗️
+Google Play SDK index ↗️
+Play Console
+Go to Play Console
+Learn more ↗️
+Fundamentals
+Play Monetization
+Play Integrity
+Play Policies
+Play Programs ↗️
+Games Dev Center
+Overview
+Play Asset Delivery
+Play Games Services
+Play Games on PC
+Level Up guidelines
+All Play guides ⤵️
+Libraries
+Play Feature Delivery
+Play In-app Updates
+Play In-app Reviews
+Play Install Referrer
+Google Play services ↗️
+Google Play SDK index ↗️
+All Play libraries ⤵️
+Tools & resources
+Android App Bundles
+Brand & marketing
+Play Console APIs ↗️
+the Android Developer's Blog
+Read the latest
+Explore the authors →
+Explore categories
+Product News
+Community
+How-tos
+Case Studies
+Events & Programs
+Documentation
+Android Developers
+Essentials
+Releases
+Behavior changes: all apps
+Stay organized with collections
+Save and categorize content based on your preferences.
+The Android 15 platform includes behavior changes that might affect your app.
+The following behavior changes apply to
+all apps
+when they run on Android 15,
+regardless of
+targetSdkVersion
+. You should test your app and then modify
+it as needed to support these properly, where applicable.
+Make sure to also review the list of
+behavior changes that only affect apps
+targeting Android 15
+.
+Core functionality
+Android 15 modifies or expands various core capabilities of the Android system.
+Changes to package stopped state
+The intention of the package
+FLAG_STOPPED
+state (which users
+can engage in AOSP builds by long-pressing an app icon and selecting "Force
+Stop") has always been to keep apps in this state until the user explicitly
+removes the app from this state by directly launching the app or indirectly
+interacting with the app (through the sharesheet or a widget, selecting the app
+as live wallpaper, etc.). In Android 15, we've updated the behavior of the
+system to be aligned with this intended behavior. Apps should only be removed
+from the stopped state through direct or indirect user action.
+To support the intended behavior, in addition to the existing restrictions, the
+system also cancels all
+pending intents
+when the app enters the
+stopped state on a device running Android 15. When the user's actions remove the
+app from the stopped state, the
+ACTION_BOOT_COMPLETED
+broadcast is delivered to the app providing an opportunity to re-register any
+pending intents.
+Note:
+Apps use pending intents to update
+app widgets
+. If an app
+enters the stopped state, all these pending intents are canceled, and the system
+disables the app's widgets. (The widgets are grayed out, and the device user
+cannot interact with them.) The system re-enables the widgets the next time the
+user launches the app.
+You can call the new
+ApplicationStartInfo.wasForceStopped()
+method to confirm whether the app was put into the stopped state.
+Support for 16 KB page sizes
+Historically, Android has only supported 4 KB memory page sizes, which has
+optimized system memory performance for the average amount of total memory that
+Android devices have typically had. Beginning with Android 15, AOSP supports
+devices that are configured to use a page size of 16 KB (16 KB
+devices). If your app uses any
+NDK
+libraries, either directly
+or indirectly through an SDK, then you will need to rebuild your app for it to
+work on these 16 KB devices.
+As device manufacturers continue to build devices with larger amounts of
+physical memory (RAM), many of these devices will adopt 16 KB (and
+eventually greater) page sizes to optimize the device's performance. Adding
+support for 16 KB page size devices enables your app to run on these
+devices and helps your app benefit from the associated performance
+improvements. Without recompiling, apps won't work on 16 KB devices in
+future Android releases.
+To help you add support for your app, we've provided guidance on how to
+check
+if your app is impacted
+, how to
+rebuild your app
+(if applicable), and how to
+test your app in
+a 16 KB environment
+using emulators (including Android 15
+system images for the Android Emulator).
+Benefits and performance gains
+Devices configured with 16 KB page sizes use slightly more memory on
+average, but also gain various performance improvements for both the system and
+apps:
+Lower app launch times while the system is under memory pressure: 3.16%
+lower on average, with more significant improvements (up to 30%) for some
+apps that we tested
+Reduced power draw during app launch: 4.56% reduction on average
+Faster camera launch: 4.48% faster hot starts on average, and 6.60% faster
+cold starts on average
+Improved system boot time: improved by 8% (approximately 950 milliseconds)
+on average
+These improvements are based on our initial testing, and results on actual
+devices will likely differ. We'll provide additional analysis of potential gains
+for apps as we continue our testing.
+Check if your app is impacted
+If your app
+uses any native code
+, then you should
+rebuild
+your app with support for 16 KB devices
+. If you are unsure
+if your app uses native code, you can
+use the APK Analyzer to identify whether
+any native code is present
+and then
+check the alignment of ELF
+segments for any shared libraries
+that you find. Android Studio
+also provides features that help you to
+automatically detect alignment
+issues
+.
+If your app only uses code written in the Java programming language or in
+Kotlin, including all libraries or SDKs, then your app already supports
+16 KB devices. Nevertheless, we recommend that you
+test your app in a
+16 KB environment
+to verify that there are no unexpected
+regressions in app behavior.
+Required changes for some apps to support private space
+Private space
+is a new feature in Android 15 that lets users
+create a separate space on their device where they can keep sensitive apps away
+from prying eyes, under an additional layer of authentication. Because apps in
+the private space have restricted visibility, some types of apps need to take
+additional steps to be able to see and interact with apps in a user's private
+space.
+All apps
+Because apps in the private space are kept in a separate user profile, similar
+to
+work profiles
+, apps shouldn't assume that any installed
+copies of their app that aren't in the main profile are in the work profile. If
+your app has logic related to work profile apps that make this assumption,
+you'll need to adjust this logic.
+Medical apps
+When a user locks the private space, all apps in the private space are stopped,
+and those apps can't perform foreground or background activities, including
+showing notifications. This behavior might critically impact the use and
+function of medical apps installed in the private space.
+The private space setup experience warns users that the private space is not
+suitable for apps that need to perform critical foreground or background
+activities, such as showing notifications from medical apps. However,
+apps can't determine whether or not they're being used in the private space,
+so they can't show a warning to the user for this case.
+For these reasons, if you develop a medical app, review how this feature might
+impact your app and take appropriate actions—such as informing your users not to
+install your app in the private space—to avoid disrupting critical app
+capabilities.
+Launcher apps
+If you develop a launcher app, you must do the following before apps in the
+private space will be visible:
+Your app must be assigned as the default launcher app for the device—that
+is, possessing the
+ROLE_HOME
+role.
+Your app must declare the
+ACCESS_HIDDEN_PROFILES
+normal permission
+in your app's manifest file
+.
+Launcher apps that declare the
+ACCESS_HIDDEN_PROFILES
+permission must handle
+the following private space use cases:
+Your app must have a separate launcher container for apps installed in the
+private space. Use the
+getLauncherUserInfo()
+method to
+determine which type of user profile is being handled.
+The user must be able to hide and show the private space container.
+The user must be able to lock and unlock the private space container. Use
+the
+requestQuietModeEnabled()
+method to lock (by
+passing
+true
+) or unlock (by passing
+false
+) the private space.
+While locked, no apps in the private space container should be visible or
+discoverable through mechanisms such as search. Your app should
+register a
+receiver
+for the
+ACTION_PROFILE_AVAILABLE
+and
+ACTION_PROFILE_UNAVAILABLE
+broadcasts and update the
+UI in your app when the locked or unlocked state of the private space
+container changes. Both of these broadcasts include
+EXTRA_USER
+, which your app can use to refer to the
+private profile user.
+You can also use the
+isQuietModeEnabled()
+method to
+check whether the private space profile is locked or not.
+App store apps
+The private space includes an "Install Apps" button that launches an implicit
+intent to install apps into the user's private space. In order for your app to
+receive this implicit intent, declare an
+<intent-filter>
+in your app's manifest file with a
+<category>
+of
+CATEGORY_APP_MARKET
+.
+PNG-based emoji font removed
+The legacy, PNG-based emoji font file (
+NotoColorEmojiLegacy.ttf
+) has been
+removed, leaving just the vector-based file. Beginning with Android 13 (API
+level 33), the emoji font file used by the system emoji renderer
+changed from a
+PNG-based file to a vector based file
+. The system retained
+the legacy font file in Android 13 and 14 for compatibility reasons, so that
+apps with their own font renderers could continue to use the legacy font file
+until they were able to upgrade.
+To check if your app is affected, search your app's code for references to the
+NotoColorEmojiLegacy.ttf
+file.
+You can choose to adapt your app in a number of ways:
+Use platform APIs for text rendering. You can render text to a bitmap-backed
+Canvas
+and use that to get a raw image if necessary.
+Add COLRv1 font support to your app. The FreeType open source library
+supports COLRv1 in
+version 2.13.0
+and
+higher.
+As a last resort, you can bundle the legacy emoji font file
+(
+NotoColorEmoji.ttf
+) into your APK,
+although in that case your app will be missing the latest emoji updates. For
+more information, see the
+Noto Emoji GitHub project
+page
+.
+Increased minimum target SDK version from 23 to 24
+Android 15 builds on the
+the changes that were made in Android 14
+and extends this
+security further. In Android 15, apps with a
+targetSdkVersion
+lower than 24 can't be installed.
+Requiring apps to meet modern API levels helps to ensure better security and
+privacy.
+Malware often targets lower API levels in order to bypass security and privacy
+protections that have been introduced in higher Android versions. For example,
+some malware apps use a
+targetSdkVersion
+of 22 to avoid being subjected to the
+runtime permission model introduced in 2015 by Android 6.0 Marshmallow (API
+level 23). This Android 15 change makes it harder for malware to avoid security
+and privacy improvements. Attempting to install an app targeting a lower API
+level results in an installation failure, with a message like the following one
+appearing in Logcat:
+INSTALL_FAILED_DEPRECATED_SDK_VERSION: App package must target at least SDK version 24, but found 7
+On devices upgrading to Android 15, any apps with a
+targetSdkVersion
+lower
+than 24 remain installed.
+If you need to test an app targeting an older API level, use the following ADB
+command:
+adb install --bypass-low-target-sdk-block
+FILENAME
+.apk
+Security and privacy
+Android 15 introduces robust measures to combat one-time passcode (OTP) fraud
+and to protect the user's sensitive content, focusing on hardening the
+Notification Listener Service and screenshare protections. Key enhancements
+include redacting OTPs from notifications accessible to untrusted apps, hiding
+notifications during screenshare, and securing app activities when OTPs are
+posted. These changes aim to keep the user's sensitive content safe from
+unauthorized actors.
+Developers need to be aware of the following to ensure their apps are compatible
+with the changes in Android 15:
+OTP Redaction
+Android will stop untrusted apps that implement a
+NotificationListenerService
+from reading unredacted content
+from notifications where an OTP has been detected. Trusted apps such as
+companion device manager associations are exempt from these restrictions.
+Screenshare Protection
+Notification content is hidden during screen sharing sessions to preserve
+the user's privacy. If the app implements
+setPublicVersion()
+, Android shows the public version of
+the notification which serves as a replacement notification in insecure
+contexts. Otherwise, the notification content is redacted without any
+further context.
+Sensitive content like password input is hidden from remote viewers to
+prevent revealing the user's sensitive information.
+Activities from apps that post notifications during screenshare where an OTP
+has been detected will be hidden. App content is hidden from the remote
+viewer when launched.
+Beyond Android's automatic identification of sensitive fields, developers
+can manually mark parts of their app as sensitive using
+setContentSensitivity
+, which is hidden from remote
+viewers during screenshare.
+Developers can choose to toggle the
+Disable screen share protections
+option under
+Developer Options
+to be exempted from the screenshare
+protections for demo or testing purposes. The default system screen recorder
+is exempted from these changes, since the recordings remain on-device.
+Camera and media
+Android 15 makes the following changes to camera and media behavior for all
+apps.
+Direct and offload audio playback invalidates previously open direct or offload audio tracks when resource limits are reached
+Before Android 15, if an app requested direct or offload audio playback while
+another app was playing audio and the resource limits were reached, the app
+would fail to open a new
+AudioTrack
+.
+Beginning with Android 15, when an app requests direct or offload
+playback and the resource
+limits are reached, the system invalidates any currently open
+AudioTrack
+objects which prevent fulfilling the new track request.
+(Direct and offload audio tracks are typically opened for playback of compressed
+audio formats. Common use-cases for playing direct audio include streaming
+encoded audio over HDMI to a TV. Offload tracks are typically used to play
+compressed audio on a mobile device with hardware DSP acceleration.)
+User experience and system UI
+Android 15 includes some changes that are intended to create a more consistent,
+intuitive user experience.
+Predictive back animations enabled for apps that opted in
+Beginning in Android 15, the developer option for
+predictive back animations
+has been removed. System
+animations such as back-to-home, cross-task, and cross-activity now appear for
+apps that have
+opted in to the predictive back gesture
+either entirely or at an activity level. If your app is affected, take the
+following actions:
+Ensure that your app has been properly migrated to use the predictive back
+gesture.
+Ensure that your fragment transitions work with predictive back navigation.
+Migrate away from animation and framework transitions and use animator and
+androidx transitions instead.
+Migrate away from back stacks that
+FragmentManager
+doesn't know about. Use
+back stacks managed by
+FragmentManager
+or by the Navigation component
+instead.
+Widgets disabled when user force-stops an app
+If a user force-stops an app on a device running Android 15, the system
+temporarily disables all the app's widgets. The widgets are grayed out, and the
+user cannot interact with them. This is because beginning with Android 15, the
+system cancels all an app's pending intents when the app is force-stopped.
+The system re-enables those widgets the next time the user launches the app.
+For more information, see
+Changes to package stopped state
+.
+Media projection status bar chip alerts users to screen sharing, casting, and recording
+Note:
+This change is included on devices running
+Android 15
+QPR1
+or higher.
+Screen projection exploits expose private user data such as financial
+information because users don't realize their device screen is being shared.
+For apps running on devices with Android 15 QPR1 or higher, a status bar chip
+that is large and prominent alerts users to any in‑progress screen
+projection. Users can tap the chip to stop their screen from being shared, cast,
+or recorded. Also, screen projection automatically stops when the device screen
+is locked.
+Status bar chip for screen sharing, casting, and recording.
+Check if your app is impacted
+By default, your app includes the status bar chip and automatically suspends
+screen projection when the lock screen activates.
+To learn more about how to test your app for these use cases, see
+Status bar
+chip and auto stop
+.
+Background network access restrictions
+In Android 15, apps that start a network request outside of a valid
+process
+lifecycle
+receive an exception. Typically, an
+UnknownHostException
+or other socket-related
+IOException
+. Network requests that happen outside of a valid lifecycle are
+usually due to apps unknowingly continuing a network request even after the app
+is no longer active.
+To mitigate this exception, ensure your network requests are lifecycle aware
+and cancelled upon leaving a valid process lifecycle by using
+lifecycle aware components
+.
+If it is important that the network request should happen even when the user
+leaves the application, consider scheduling the network request using
+WorkManager
+or continue a user visible task using
+Foreground Service
+.
+Deprecations
+With each release, specific Android APIs might become obsolete or need to be
+refactored to provide a better developer experience or support new platform
+capabilities. In these cases, we officially deprecate the obsolete APIs and
+direct developers to alternative APIs to use instead.
+Deprecation means that we've ended official support for the APIs, but they will
+continue to remain available to developers. To learn more about notable
+deprecations in this release of Android, see the
+deprecations page
+.
+Content and code samples on this page are subject to the licenses described in the
+Content License
+. Java and OpenJDK are trademarks or registered trademarks of Oracle and/or its affiliates.
+Last updated 2026-09-01 UTC.
+[[["Easy to understand","easyToUnderstand","thumb-up"],["Solved my problem","solvedMyProblem","thumb-up"],["Other","otherUp","thumb-up"]],[["Missing the information I need","missingTheInformationINeed","thumb-down"],["Too complicated / too many steps","tooComplicatedTooManySteps","thumb-down"],["Out of date","outOfDate","thumb-down"],["Samples / code issue","samplesCodeIssue","thumb-down"],["Other","otherDown","thumb-down"]],["Last updated 2026-09-01 UTC."],[],[]]
+X
+Follow @AndroidDev on X
+YouTube
+Check out Android Developers on YouTube
+LinkedIn
+Connect with the Android Developers community on LinkedIn
+More Android
+Android
+Android for Enterprise
+Security
+Source
+News
+Blog
+Podcasts
+Discover
+Gaming
+Machine Learning
+Health & Fitness
+Camera & Media
+Privacy
+5G
+Android Devices
+Large screens
+Wear OS
+ChromeOS devices
+Android for cars
+Android TV
+Releases
+Android 17
+Android 16
+Android 15
+Android 14
+Android 13
+Android 12
+Android 11
+Documentation and Downloads
+Android Studio guide
+Developers guides
+API reference
+Download Studio
+Android NDK
+Support
+Report platform bug
+Report documentation bug
+Google Play support
+Join research studies
+Android
+Chrome
+Firebase
+Google Cloud Platform
+All products
+Privacy
+License
+Brand guidelines
+Manage cookies
+Get news and tips by email
+Subscribe
+English
+Deutsch
+Español – América Latina
+Français
+Indonesia
+Italiano
+Polski
+Português – Brasil
+Tiếng Việt
+Türkçe
+Русский
+עברית
+العربيّة
+فارسی
+हिंदी
+বাংলা
+ภาษาไทย
+中文 – 简体
+中文 – 繁體
+日本語
+한국어

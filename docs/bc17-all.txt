@@ -1,0 +1,931 @@
+﻿Behavior changes: all apps  |  Android Developers
+Skip to main content
+Essentials
+Build AI experiences
+Build AI-powered Android apps with Gemini APIs and more.
+Get started
+Get started
+Create your first app. Use Compose for UI and adaptive app development to support multiple device form factors.
+Hello, world!
+Developer Verification
+Adaptive apps
+Compose for UI
+AI-powered IDE
+Training
+Monetization with Play ↗️
+Optimize by form factor
+Build apps that optimize the user experience on phones, tablets, foldables, cars, XR, and more.
+Phones, tablets, foldables
+Android for Cars
+Android TV
+Android XR
+Googlebook
+ChromeOS
+Wear OS
+Build by category
+Learn to build for your use case by following Google's prescriptive and opinionated guidance.
+Games
+Camera & media
+Social & messaging
+Health & fitness
+Productivity
+Enterprise apps
+Get the latest
+Stay in touch with the latest releases throughout the year, join our preview programs, and give us your feedback.
+Latest updates
+Experimental updates
+Android Studio preview
+Jetpack & Compose libraries
+Wear OS releases
+Privacy Sandbox ↗️
+Design & Plan
+Excellent Experiences
+Build the best experiences for your best users.
+Learn more
+UI Design
+Design a beautiful user interface using Android best practices.
+Design for Android
+Mobile
+Desktop experiences
+XR Headsets & XR Glasses
+AI Glasses
+Widgets
+Wear OS
+Android TV
+Android for Cars
+Architecture
+Design robust, testable, and maintainable app logic and services.
+Introduction
+Libraries
+Navigation
+Modularization
+Testing
+Kotlin Multiplatform
+Quality
+Plan for app quality and align with Play store guidelines.
+Overview
+Core value
+User experience
+Accessibility
+Technical quality
+Excellent Experiences
+Security
+Safeguard users against threats and ensure a secure Android experience.
+Overview
+Privacy
+Permissions
+Identity
+Fraud prevention
+Develop
+Gemini in Android Studio
+Your AI development companion for Android development.
+Learn more
+Get Android Studio
+Core areas
+Get the samples and docs for the features you need.
+Samples
+Multidevice support
+User interfaces
+Background work
+Data and files
+Connectivity
+All core areas ⤵️
+Tools and workflow
+Use the IDE to write and build your app, or create your own pipeline.
+Write and debug code
+Build projects
+Test your app
+Performance
+Command-line tools
+Gradle plugin API
+Android Bench
+Device tech
+Write code for form factors. Connect devices and share data.
+Phones, tablets, foldables
+ChromeOS
+Android for Cars
+Android TV
+Android XR
+Wear OS
+Android Health
+Better Together
+All devices ⤵️
+Libraries
+Browse API reference documentation with all the details.
+Android platform
+Jetpack libraries
+Compose libraries
+Google Play services ↗️
+Google Play SDK index ↗️
+Google Play
+Play Console
+Publish your app or game and grow your business on Google Play.
+Go to Play Console
+Learn more ↗️
+Fundamentals
+Learn how to engage users, monitize, and secure your app.
+Play Monetization
+Play Integrity
+Play Policies
+Play Programs ↗️
+Games Dev Center
+Develop and deliver games. Get tools, downloads, and samples.
+Overview
+Play Asset Delivery
+Play Games Services
+Play Games on PC
+Level Up guidelines
+All Play guides ⤵️
+Libraries
+Browse API reference documentation with all the details.
+Play Feature Delivery
+Play In-app Updates
+Play In-app Reviews
+Play Install Referrer
+Google Play services ↗️
+Google Play SDK index ↗️
+All Play libraries ⤵️
+Tools & resources
+Tools for publishing, promoting, and managing your app.
+Android App Bundles
+Brand & marketing
+Play Console APIs ↗️
+Blog
+the Android Developer's Blog
+Read the latest
+Explore the authors →
+Explore categories
+Product News
+Stay in the loop with the latest updates, feature releases, and behind-the-scenes looks at how we’re evolving.
+Community
+Discover stories from our users, spotlight features, and the collaborative projects that bring us all together.
+How-tos
+From quick tips to deep-dive tutorials, these step-by-step guides are designed to help you work smarter and faster.
+Case Studies
+Real-world results from real-world users. Explore how different teams use our tools to achieve their goals.
+Events & Programs
+Get the details on upcoming webinars, workshops, meetups, and special initiatives designed to help you grow.
+Documentation
+Access detailed manuals, API references, and technical specifications to help you build and integrate with confidence.
+/
+English
+Deutsch
+Español – América Latina
+Français
+Indonesia
+Italiano
+Polski
+Português – Brasil
+Tiếng Việt
+Türkçe
+Русский
+עברית
+العربيّة
+فارسی
+हिंदी
+বাংলা
+ภาษาไทย
+中文 – 简体
+中文 – 繁體
+日本語
+한국어
+Android Studio
+Sign in
+Platform
+Overview
+Releases
+Technology
+Essentials
+More
+Overview
+Releases
+Technology
+Design & Plan
+More
+Develop
+More
+Google Play
+More
+Blog
+More
+Android Studio
+All Android releases
+Android 17
+Home
+Features and changes list
+Get your apps ready
+Migrate your apps
+Get Android 17
+Set up the Android 17 SDK
+Android 17 Beta devices
+Feedback and issue tracker
+Flash a factory image
+Apply an OTA image
+Get a Generic System Image (GSI)
+Review behavior changes for apps
+All apps
+Apps targeting Android 17
+Background audio hardening
+MessageQueue behavior change guidance
+Restrictions on orientation and resizability are ignored
+Explore new features and APIs
+Overview
+Contact picker
+Release notes
+Reference updates
+API diffs - Beta 2 → API 37 ⍈
+API diffs - API 36 → API 37 ⍈
+QPR1 Beta
+Release notes
+Get QPR beta builds
+Feedback and issue tracker
+Flash a factory image
+OTA images
+Generic System Images (GSIs)
+Reference updates
+API diffs - Beta 5 → API 37.1 ⍈
+API diffs - API 37 → API 37.1 ⍈
+QPR2 Beta
+Overview
+Release notes
+Get QPR beta builds
+Feedback and issue tracker
+Flash a factory image
+OTA images
+Generic System Images (GSIs)
+Reference updates
+API diffs - Beta 3 → 37.2 ⍈
+API diffs - API 37.1 → 37.2 ⍈
+Build AI experiences
+Get started
+Get started
+Hello, world!
+Developer Verification
+Adaptive apps
+Compose for UI
+AI-powered IDE
+Training
+Monetization with Play ↗️
+Optimize by form factor
+Phones, tablets, foldables
+Android for Cars
+Android TV
+Android XR
+Googlebook
+ChromeOS
+Wear OS
+Build by category
+Games
+Camera & media
+Social & messaging
+Health & fitness
+Productivity
+Enterprise apps
+Get the latest
+Latest updates
+Experimental updates
+Android Studio preview
+Jetpack & Compose libraries
+Wear OS releases
+Privacy Sandbox ↗️
+Excellent Experiences
+Learn more
+UI Design
+Design for Android
+Mobile
+Desktop experiences
+XR Headsets & XR Glasses
+AI Glasses
+Widgets
+Wear OS
+Android TV
+Android for Cars
+Architecture
+Introduction
+Libraries
+Navigation
+Modularization
+Testing
+Kotlin Multiplatform
+Quality
+Overview
+Core value
+User experience
+Accessibility
+Technical quality
+Excellent Experiences
+Security
+Overview
+Privacy
+Permissions
+Identity
+Fraud prevention
+Gemini in Android Studio
+Learn more
+Get Android Studio
+Core areas
+Samples
+Multidevice support
+User interfaces
+Background work
+Data and files
+Connectivity
+All core areas ⤵️
+Tools and workflow
+Write and debug code
+Build projects
+Test your app
+Performance
+Command-line tools
+Gradle plugin API
+Android Bench
+Device tech
+Phones, tablets, foldables
+ChromeOS
+Android for Cars
+Android TV
+Android XR
+Wear OS
+Android Health
+Better Together
+All devices ⤵️
+Libraries
+Android platform
+Jetpack libraries
+Compose libraries
+Google Play services ↗️
+Google Play SDK index ↗️
+Play Console
+Go to Play Console
+Learn more ↗️
+Fundamentals
+Play Monetization
+Play Integrity
+Play Policies
+Play Programs ↗️
+Games Dev Center
+Overview
+Play Asset Delivery
+Play Games Services
+Play Games on PC
+Level Up guidelines
+All Play guides ⤵️
+Libraries
+Play Feature Delivery
+Play In-app Updates
+Play In-app Reviews
+Play Install Referrer
+Google Play services ↗️
+Google Play SDK index ↗️
+All Play libraries ⤵️
+Tools & resources
+Android App Bundles
+Brand & marketing
+Play Console APIs ↗️
+the Android Developer's Blog
+Read the latest
+Explore the authors →
+Explore categories
+Product News
+Community
+How-tos
+Case Studies
+Events & Programs
+Documentation
+Android Developers
+Essentials
+Releases
+Behavior changes: all apps
+Stay organized with collections
+Save and categorize content based on your preferences.
+The Android 17 platform includes behavior changes that might affect your app.
+The following behavior changes apply to
+all apps
+when they run on Android 17,
+regardless of
+targetSdkVersion
+. You should test your app and then modify
+it as needed to support these changes, where applicable.
+Make sure to also review the list of
+behavior changes that only affect apps
+targeting Android 17
+.
+Note:
+This page lists some of the more important changes. For more detailed
+information, see the
+Android 17 release notes
+.
+Core functionality
+Android 17 (API level 37) includes the following changes that modify or
+expand various core capabilities of the Android system.
+App memory limits
+Android 17 introduces app memory limits based on the device's total RAM
+to create a more stable and deterministic environment for your apps and
+Android users. These limits focus on memory leaks and other outliers before
+they trigger system-wide instability resulting in UI stuttering, higher battery
+drain, and apps being killed. While we anticipate minimal impact on the vast
+majority of app sessions, we recommend the
+following memory best
+practices
+, including establishing a baseline for memory.
+You can determine if your app session was impacted by calling
+getDescription
+in
+ApplicationExitInfo
+; if your app was
+affected, the exit reason will be
+REASON_OTHER
+and
+the description will contain the string
+"MemoryLimiter:AnonSwap"
+along with
+other information. You can also use
+trigger-based profiling
+with
+TRIGGER_TYPE_ANOMALY
+to get heap dumps that are collected when the
+memory limit is hit.
+The
+Manage your app's memory
+documentation gives information
+to help you diagnose your app's memory issues and optimize its resource
+consumption.
+Test your app's behavior under the memory constraints
+You can use
+Android Debug Bridge (
+adb
+)
+to adjust or disable the
+memory limits on any device that imposes them. The shell command
+am
+provides three subcommands to adjust the memory limits. (These commands have
+no effect on a device which does not impose memory limits.)
+am memory-limiter ignore <uid>|none|all
+am memory-limiter manual <pid> <limit>|max|none
+am memory-limiter status
+ignore
+Instructs the memory limiter to ignore some or all processes.
+Passing a
+UID (Android User ID)
+instructs the memory limiter to
+ignore enforcement on all processes associated with that UID.
+You can also pass
+all
+(ignore all apps) or
+none
+(do not ignore any apps).
+Passing
+none
+overrides any previous calls to
+am memory-limiter ignore
+.
+If you instruct the memory limiter to ignore a UID, you can still apply
+a manual memory limit to a process within the app
+by calling
+am memory-limiter manual
+.
+manual
+Instructs the system to impose a memory constraint on the process with the
+specified PID (Process ID). The memory constraint is specified as an integer
+number of MB; for example, passing
+30
+specifies that the process is limited
+to 30 MB of memory. Passing
+max
+removes all memory limits on that process.
+Passing
+none
+removes any manual limits set on the process, restoring the
+system's default limit (if any).
+status
+Reports the current status of the memory limiter. The status includes the
+memory limits imposed on visible and non-visible processes.
+Privacy
+Android 17 includes the following changes to improve user privacy.
+SMS OTP protection
+Beginning with Android 17, Android is expanding its protection
+for SMS messages containing one-time passwords (OTP).
+In previous versions of Android, this protection was primarily focused on the
+SMS Retriever format. Delivery of messages containing an SMS retriever hash was
+delayed for most apps for three hours. However, certain apps (like the
+default SMS handler) were exempt from the delay, and the app that owned the hash
+was also exempted.
+Beginning with Android 17, the protection is also applied to WebOTP
+format messages. If an app has permission to read SMS messages but is not the
+intended recipient of a WebOTP message (as determined by domain verification),
+the message is not accessible to the app until three hours after the message's
+receipt. This change is intended to improve user security by ensuring that only
+apps associated with the domain mentioned in the message can programmatically
+read the verification code.
+During this three hour delay, the
+SMS_RECEIVED_ACTION
+broadcast is
+withheld and
+SMS provider
+database queries are filtered. The
+SMS message is available to these apps after the delay. This change applies to
+all apps
+, regardless of their target API level.
+Certain apps such as the default SMS assistant app, connected device companion
+apps, etc., are exempted from this delay. All apps that rely on reading SMS
+messages for OTP extraction should transition to using
+SMS Retriever
+or
+SMS
+User Consent
+APIs to ensure continued functionality.
+Note:
+If your app targets Android 17 (API level 37) or higher, this
+protection is also extended to standard SMS messages. For more information, see
+OTP protection for standard SMS messages
+in the
+Behavior changes:
+Apps targeting Android 17
+documentation.
+Security
+Android 17 includes the following improvements to device and app
+security.
+usesClearTraffic deprecation plan
+In a future release, we plan to deprecate the
+usesCleartextTraffic
+element.
+Apps that need to make unencrypted (HTTP) connections should migrate to
+using a
+network security configuration
+file, which lets you
+specify which domains your app needs to make cleartext connections to.
+Be aware that network security configuration files are only supported on API
+levels 24 and higher. If your app has a minimum API level lower than 24, you
+should do
+both
+of the following:
+Set the
+usesCleartextTraffic
+attribute to
+true
+Use a network configuration file
+If your app's minimum API level is 24 or higher, you can use a network
+configuration file and you don't need to set
+usesCleartextTraffic
+.
+Restrict implicit URI grants
+Currently, if an app launches an intent with a URI that has the action
+ACTION_SEND
+,
+ACTION_SEND_MULTIPLE
+, or
+ACTION_IMAGE_CAPTURE
+, the system automatically grants the read and
+write URI permissions to the target app. Starting in Android 18, the system will
+no longer automatically grant these permissions. For this reason, we recommend
+that apps explicitly grant the
+relevant URI permissions instead of relying on the system to grant them.
+To detect the usage of these intents in your app, use
+StrictMode
+with
+detectImplicitUriPermissionGrant()
+to trigger a violation:
+Kotlin
+val
+policy
+=
+StrictMode
+.
+VmPolicy
+.
+Builder
+()
+.
+detectImplicitUriPermissionGrant
+()
+.
+penaltyLog
+()
+.
+build
+()
+StrictMode
+.
+setVmPolicy
+(
+policy
+)
+Java
+StrictMode
+.
+VmPolicy
+policy
+=
+new
+StrictMode
+.
+VmPolicy
+.
+Builder
+()
+.
+detectImplicitUriPermissionGrant
+()
+.
+penaltyLog
+()
+.
+build
+();
+StrictMode
+.
+setVmPolicy
+(
+policy
+);
+Alternatively, you can monitor for logged exceptions containing the message
+Please set the grant explicitly in the app
+that appears when system implicitly
+sets the grant. You can monitor for these logs
+using the following
+adb
+command:
+adb
+logcat
+|
+grep
+"Please set the grant explicitly in the app"
+To explicitly grant the necessary permissions, add the
+FLAG_GRANT_READ_URI_PERMISSION
+flag to
+ACTION_SEND
+and
+ACTION_SEND_MULTIPLE
+intents:
+Kotlin
+intent
+.
+addFlags
+(
+Intent
+.
+FLAG_GRANT_READ_URI_PERMISSION
+)
+Java
+intent
+.
+addFlags
+(
+Intent
+.
+FLAG_GRANT_READ_URI_PERMISSION
+);
+Include both
+FLAG_GRANT_READ_URI_PERMISSION
+and
+FLAG_GRANT_WRITE_URI_PERMISSION
+flags for
+ACTION_IMAGE_CAPTURE
+intents:
+Kotlin
+intent
+.
+addFlags
+(
+Intent
+.
+FLAG_GRANT_READ_URI_PERMISSION
+or
+Intent
+.
+FLAG_GRANT_WRITE_URI_PERMISSION
+)
+Java
+intent
+.
+addFlags
+(
+Intent
+.
+FLAG_GRANT_READ_URI_PERMISSION
+|
+Intent
+.
+FLAG_GRANT_WRITE_URI_PERMISSION
+);
+Per-app keystore limits
+Apps should avoid creating excessive numbers of keys in Android Keystore,
+because it is a shared resource for all apps on the device. Beginning with
+Android 17, the system enforces a limit on the number of keys an app can
+own. The limit is 50,000 keys for non-system apps targeting
+Android 17 (API level 37) or higher, and 200,000 keys for all other apps.
+System apps have a limit of 200,000 keys, regardless of which API level they
+target.
+If an app attempts to create keys beyond the limit, the creation fails with a
+KeyStoreException
+. The exception's message string contains information
+about the key limit. If the app calls
+getNumericErrorCode()
+on the
+exception, the return value depends on what API level the app targets:
+Apps targeting Android 17 (API level 37) or higher:
+getNumericErrorCode()
+returns the new
+ERROR_TOO_MANY_KEYS
+value.
+All other apps:
+getNumericErrorCode()
+returns
+ERROR_INCORRECT_USAGE
+.
+Block cross profile loopback traffic
+Beginning with Android 17, cross-profile loopback traffic is no longer
+permitted by default. Loopback traffic within the same profile is not affected.
+This change applies to all apps running on Android 17 or higher,
+regardless of what API level the app targets.
+User experience and system UI
+Android 17 includes the following changes that are intended
+to create a more consistent, intuitive user experience.
+Restoring default IME visibility after rotation
+Beginning with Android 17, when the device's configuration changes (for
+example, through rotation), and this is not handled by the app itself, the
+previous IME visibility is not restored.
+If your app undergoes a configuration change that it does not handle, and the
+app needs the keyboard to be visible after the change,
+you must explicitly request this. You can make this request in one of the
+following ways:
+Set the
+android:windowSoftInputMode
+attribute to
+stateAlwaysVisible
+.
+Programmatically request the soft keyboard in your activity's
+onCreate()
+method, or add the
+onConfigurationChanged()
+method.
+Human input
+Android 17 includes the following changes that affect how
+apps interact with human input devices like keyboards and touchpads.
+Touchpads deliver relative events by default during pointer capture
+Beginning with Android 17, if an app requests pointer capture using
+View.requestPointerCapture()
+and the user uses a touchpad, the system
+recognizes pointer movement and scrolling gestures from the user's touches and
+reports them to the app in the same way as pointer and scroll wheel movements
+from a captured mouse. In most cases, this removes the need for apps that
+support captured mice to add special handling logic for touchpads. For more
+details, see the documentation for
+View.POINTER_CAPTURE_MODE_RELATIVE
+.
+Previously, the system did not attempt to recognize gestures from the touchpad,
+and instead delivered the raw, absolute finger locations to the app in a similar
+format to touchscreen touches. If an app still requires this absolute data, it
+should call the new
+View.requestPointerCapture(int)
+method with
+View.POINTER_CAPTURE_MODE_ABSOLUTE
+instead.
+Media
+Android 17 includes the following changes to media behavior.
+Background audio hardening
+Beginning with Android 17, the audio framework enforces restrictions on
+background audio interactions including audio playback, audio focus requests,
+and volume change APIs to ensure that these changes are started intentionally by
+the user.
+If the app tries to call audio APIs while the app is not in a valid lifecycle,
+the audio playback and volume change APIs fail silently without throwing an
+exception or providing a failure message. The audio focus API fails with the
+result code
+AUDIOFOCUS_REQUEST_FAILED
+.
+Note:
+The restrictions are more stringent if an app targets
+Android 17 (API level 37). For these apps, the foreground service must have
+while-in-use (WIU) capabilities, unless the app has the
+exact alarm
+permission and is interacting with
+USAGE_ALARM
+audio streams.
+For more information, including mitigation strategies, see
+Background audio
+hardening
+.
+Connectivity
+Android 17 includes the following changes to enhance device
+connectivity.
+Autonomous re-pairing for Bluetooth bond losses
+Android 17 introduces autonomous re-pairing, a system-level enhancement
+designed to automatically resolve Bluetooth bond loss.
+Previously, if a bond was lost, users had to manually navigate to Settings to
+unpair and then re-pair the peripheral. This feature builds upon the security
+improvement of Android 16 by allowing the system to re-establish bonds
+in the background without requiring users to manually navigate to Settings to
+unpair and re-pair peripherals.
+While most apps will not require code changes, developers should be aware of the
+following behavior changes in Bluetooth stack:
+New pairing context:
+The
+ACTION_PAIRING_REQUEST
+now includes the
+EXTRA_PAIRING_CONTEXT
+extra which allows apps to distinguish between a
+standard pairing request and an autonomous system-initiated re-pairing attempt.
+Conditional key updates:
+Existing security keys will only be replaced if
+the re-pairing is successful and new connection meets or exceeds the security
+level of the previous bond.
+Modified intent timing:
+The
+ACTION_KEY_MISSING
+intent is now
+broadcast only if the autonomous re-pairing attempt fails. This reduces
+unnecessary error handling in the app if the system successfully recovers the
+bond in the background.
+User notification:
+The system manages re-pairing via new UI notifications
+and dialogs. Users will be prompted to confirm the re-pairing attempt to ensure
+they are aware of the reconnection.
+Peripheral device manufacturers and companion app developers should verify that
+hardware and app gracefully handle bond transitions. To test this behavior,
+simulate a remote bond loss using either of the following methods:
+Manually remove the bond information from the peripheral device
+Manually unpair the device in: Settings > Connected devices
+Content and code samples on this page are subject to the licenses described in the
+Content License
+. Java and OpenJDK are trademarks or registered trademarks of Oracle and/or its affiliates.
+Last updated 2026-09-02 UTC.
+[[["Easy to understand","easyToUnderstand","thumb-up"],["Solved my problem","solvedMyProblem","thumb-up"],["Other","otherUp","thumb-up"]],[["Missing the information I need","missingTheInformationINeed","thumb-down"],["Too complicated / too many steps","tooComplicatedTooManySteps","thumb-down"],["Out of date","outOfDate","thumb-down"],["Samples / code issue","samplesCodeIssue","thumb-down"],["Other","otherDown","thumb-down"]],["Last updated 2026-09-02 UTC."],[],[]]
+X
+Follow @AndroidDev on X
+YouTube
+Check out Android Developers on YouTube
+LinkedIn
+Connect with the Android Developers community on LinkedIn
+More Android
+Android
+Android for Enterprise
+Security
+Source
+News
+Blog
+Podcasts
+Discover
+Gaming
+Machine Learning
+Health & Fitness
+Camera & Media
+Privacy
+5G
+Android Devices
+Large screens
+Wear OS
+ChromeOS devices
+Android for cars
+Android TV
+Releases
+Android 17
+Android 16
+Android 15
+Android 14
+Android 13
+Android 12
+Android 11
+Documentation and Downloads
+Android Studio guide
+Developers guides
+API reference
+Download Studio
+Android NDK
+Support
+Report platform bug
+Report documentation bug
+Google Play support
+Join research studies
+Android
+Chrome
+Firebase
+Google Cloud Platform
+All products
+Privacy
+License
+Brand guidelines
+Manage cookies
+Get news and tips by email
+Subscribe
+English
+Deutsch
+Español – América Latina
+Français
+Indonesia
+Italiano
+Polski
+Português – Brasil
+Tiếng Việt
+Türkçe
+Русский
+עברית
+العربيّة
+فارسی
+हिंदी
+বাংলা
+ภาษาไทย
+中文 – 简体
+中文 – 繁體
+日本語
+한국어
