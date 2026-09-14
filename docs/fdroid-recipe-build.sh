@@ -76,14 +76,26 @@ tar xf openssl.tar.gz
 echo "== ⑤ ICU（最大的一块：libicudata 单体约 33MB，编译也最耗时）"
 # ⚠️ 待评估：Node 可用 --with-intl=small-icu 大幅减小体积与构建时间，
 #    但引擎是否依赖完整 ICU **未核实** → 见设计文档 §4.2。
+#
+# ICU 交叉编译的正确做法：**先做一份宿主机构建**（host build），再让交叉构建
+# 用 --with-cross-build 指向它 —— 因为 ICU 在构建过程中需要运行自己生成的工具
+# （genrb/gencnval 等）来处理数据，交叉编译出的工具在宿主机上跑不了。
 fetch https://github.com/unicode-org/icu/releases/download/release-76-1/icu4c-76_1-src.tgz icu.tgz
 tar xf icu.tgz
+
+echo "    ⑤a 宿主机构建（提供交叉构建要用的工具 + 数据）"
 ( cd icu/source \
-    && ./configure $CONFIGURE_COMMON --with-cross-build= 2>/dev/null || \
-       ./configure $CONFIGURE_COMMON \
+    && ./configure --prefix="$WORK/icu-host" \
     && make -j"$(nproc)" && make install )
-# 注意：ICU 交叉编译通常需要一份**宿主机构建**作为 cross-build 参考，
-#       这一步在配方里需要单独处理（本骨架未实现，属未验证项）。
+
+echo "    ⑤b 交叉构建（--with-cross-build 指向 ⑤a）"
+# 注意：⑤b 必须在一个**干净的源码副本**里做（ICU 不支持同目录先宿主后交叉）
+fetch https://github.com/unicode-org/icu/releases/download/release-76-1/icu4c-76_1-src.tgz icu-cross.tgz
+mkdir -p icu-cross && tar xf icu-cross.tgz -C icu-cross
+( cd icu-cross/icu/source \
+    && ./configure $CONFIGURE_COMMON --with-cross-build="$WORK/icu-host" \
+    && make -j"$(nproc)" && make install )
+# ⚠️ 本步**未实测**：ICU 的 cross-build 路径与工具要求随版本变化，需按实际报错调整。
 
 # ───────────────────────── ② Node.js ─────────────────────────
 echo "== ⑥ Node.js（--dest-os=android，Termux 同款做法）"

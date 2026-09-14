@@ -1,0 +1,143 @@
+# DSHA — F-Droid 构建配方（sudo / prebuild / build 三块）
+#
+# 本文件是 **`metadata/dev.dsh.host.yml` 里 `Builds:` 块**的完整草稿，
+# 与 `docs/fdroid-build-recipe-build.sh`（build 步骤的脚本化内容）配套。
+#
+# ⚠️ 状态：**未验证**。整体从未在 F-Droid 构建机或等价 Linux 环境跑过
+#    （开发机是 Windows，无 docker、WSL 无发行版、无 bash）。
+#    先用 `docs/fdroid-node-build-verification.md` 量出真实耗时再投入。
+#
+# ⚠️ 未决：`bash` / coreutils / CA 证书等**其余前缀文件**是否纳入本配方，
+#    取决于尚未做出的策略决定（见 `docs/fdroid-build-recipe-design.md` §4.4）。
+#    下面的配方**只覆盖 node 运行时及其依赖库**。
+
+Builds:
+  - versionName: 0.1.0-rc1
+    versionCode: 2
+    commit: v0.1.0-rc1
+    subdir: host-app
+
+    # ⚠️ **不用 `gradle:`，只用 `build:`** —— 二者是互斥的两种构建方式：
+    #    `gradle:` 由 fdroidserver 拼出 `./gradlew <tasks>` 命令；
+    #    `build:` 则直接执行我们给的 shell 命令，gradle 由我们自己调用。
+    #    本应用必须在 gradle 之前做 C/C++ 交叉编译，所以只能走 `build:`。
+    #    （此项语义**未在 fdroiddata 上实测**，但结构上二者互斥是明确的 ——
+    #      若实测发现可以并存，可再简化。）
+    output: app/build/outputs/apk/release/app-release-unsigned.apk
+
+    # ───────────────────────── sudo：宿主机构建依赖 ─────────────────────────
+    # F-Droid 构建机基于 Ubuntu，可用 apt。只装**宿主侧**工具；
+    # 目标侧（Android）工具链由 NDK 提供。
+    sudo:
+      - apt-get update
+      - apt-get install -y --no-install-recommends
+          build-essential
+          curl
+          file
+          python3
+          pkg-config
+          autoconf automake libtool
+          perl
+      # python3 → Node 的 configure 需要；perl → OpenSSL 的 Configure 需要
+
+    # ───────────────────────── prebuild：只获取源码，不产出二进制 ─────────────────────────
+    # ⚠️ F-Droid 的已知约束：**prebuild 的产物二进制会被清理**。
+    #    因此这里只做"下载 + 解包"，所有编译都放在 build 里。
+    prebuild: |
+      set -eu
+      mkdir -p _src && cd _src
+      ICU_VER=76_1
+      fetch() { [ -f "$2" ] || curl -fsSL -o "$2" "$1"; }
+      fetch https://zlib.net/zlib-1.3.1.tar.gz                      zlib.tar.gz
+      fetch https://c-ares.org/download/c-ares-1.34.4.tar.gz         cares.tar.gz
+      fetch https://sqlite.org/2024/sqlite-autoconf-3460100.tar.gz   sqlite.tar.gz
+      fetch https://www.openssl.org/source/openssl-3.3.2.tar.gz      openssl.tar.gz
+      fetch https://github.com/unicode-org/icu/releases/download/release-${ICU_VER}/icu4c-${ICU_VER}-src.tgz icu.tgz
+      fetch https://nodejs.org/dist/v24.18.0/node-v24.18.0.tar.gz    node.tar.gz
+      for f in zlib cares sqlite openssl node; do tar xf $f.tar.gz; done
+      # ICU 需要**两份**源码副本：一份做宿主机构建，一份做交叉构建
+      #（ICU 不支持在同一份源码里先宿主后交叉）
+      mkdir -p icu-host icu-cross
+      tar xf icu.tgz -C icu-host
+      tar xf icu.tgz -C icu-cross
+
+    # ───────────────────────── build：真正产出二进制 ─────────────────────────
+    # 与 `docs/fdroid-recipe-build.sh` 内容一致；此处内联以便直接放进 metadata。
+    # 依赖顺序：zlib → c-ares → sqlite3 → OpenSSL → ICU(宿主+交叉) → Node → 两个原生插件
+    build: |
+      set -eu
+      REPO_ROOT="$(pwd)/../.."           # 回到仓库根（subdir 是 host-app）
+      SRC="$(pwd)/_src"
+      ANDROID_NDK_HOME="${ANDROID_NDK_HOME:-$ANDROID_HOME/ndk/26.1.10909125}"
+      API=24
+      TARGET=aarch64-linux-android${API}
+      TOOLCHAIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64"
+      export CC="$TOOLCHAIN/bin/${TARGET}-clang"
+      export CXX="$TOOLCHAIN/bin/${TARGET}-clang++"
+      export AR="$TOOLCHAIN/bin/llvm-ar"
+      export RANLIB="$TOOLCHAIN/bin/llvm-ranlib"
+      export STRIP="$TOOLCHAIN/bin/llvm-strip"
+      # 16KB 页大小对齐 —— 每个组件都要带（见 RELEASE.md §5.3.1）
+      export CFLAGS="-O2 -fPIC -Wl,-z,max-page-size=16384"
+      export CXXFLAGS="$CFLAGS"
+      export LDFLAGS="-Wl,-z,max-page-size=16384"
+      PREFIX="$(pwd)/_fdroid_build/prefix"
+      mkdir -p "$PREFIX"
+      CFG="--host=$TARGET --prefix=$PREFIX --disable-static --enable-shared"
+
+      cd "$SRC"
+      ( cd zlib-1.3.1      && ./configure --prefix="$PREFIX" --static=0 && make -j"$(nproc)" && make install )
+      ( cd c-ares-1.34.4   && ./configure $CFG && make -j"$(nproc)" && make install )
+      ( cd sqlite-autoconf-3460100 && ./configure $CFG && make -j"$(nproc)" && make install )
+      ( cd openssl-3.3.2   && ./Configure android-arm64 -D__ANDROID_API__=$API \
+            --prefix="$PREFIX" --openssldir="$PREFIX/etc/tls" shared no-tests \
+            && make -j"$(nproc)" && make install_sw )
+      # ICU：先宿主机构建（提供 genrb 等工具），再在独立副本里交叉构建
+      ( cd icu-host/icu/source && ./configure --prefix="$SRC/icu-host-prefix" \
+            && make -j"$(nproc)" && make install )
+      ( cd icu-cross/icu/source && ./configure $CFG --with-cross-build="$SRC/icu-host" \
+            && make -j"$(nproc)" && make install )
+      # Node
+      ( cd node-v24.18.0 && ./configure \
+            --dest-os=android --dest-cpu=arm64 --without-snapshot \
+            --openssl-use-def-ca-store \
+            --shared-openssl --shared-openssl-includes="$PREFIX/include" --shared-openssl-libpath="$PREFIX/lib" \
+            --shared-zlib    --shared-zlib-includes="$PREFIX/include"    --shared-zlib-libpath="$PREFIX/lib" \
+            --shared-cares   --shared-cares-includes="$PREFIX/include"   --shared-cares-libpath="$PREFIX/lib" \
+            --shared-sqlite  --shared-sqlite-includes="$PREFIX/include"  --shared-sqlite-libpath="$PREFIX/lib" \
+            --shared-icu     --with-intl=full-icu \
+            --prefix="$PREFIX" \
+            && make -j"$(nproc)" )
+
+      # 两个原生插件（参数与本机已实测成功的命令一致）
+      NM="$REPO_ROOT/host-app/app/src/main/assets/usr/lib/node_modules"
+      NAPI_INC="$(find "$NM" -type d -name node-addon-api | head -1)"
+      "$CC" -shared -fPIC -O2 -std=c++17 -DNAPI_VERSION=8 -D_FILE_OFFSET_BITS=64 \
+            -I"$PREFIX/include/node" -I"$NAPI_INC" \
+            "$NM/node-pty/src/unix/pty.cc" \
+            -o "$NM/node-pty/prebuilds/android-arm64/pty.node" \
+            -llog -Wl,-z,max-page-size=16384
+      "$CC" -shared -fPIC -O2 -DNAPI_VERSION=8 -I"$PREFIX/include/node" \
+            "$NM/@deepseek-ai/node-addon-system/src/main.c" \
+            "$NM/@deepseek-ai/node-addon-system/src/flock.c" \
+            -o "$NM/@deepseek-ai/node-addon-system-android-arm64/bin/system.node" \
+            -llog -Wl,-z,max-page-size=16384
+      # 注意：flock 原生件必须在 bin/system.node（**不是** bin/musl/system.node）——
+      #       Android 不走 flock.js 里 platform === 'linux' 的分支。
+
+      # 布置运行时到 assets
+      USR="$REPO_ROOT/host-app/app/src/main/assets/usr"
+      mkdir -p "$USR/bin" "$USR/lib"
+      cp "$PREFIX/bin/node" "$USR/bin/node"
+      cp -f "$PREFIX"/lib/*.so* "$USR/lib/" 2>/dev/null || true
+      "$STRIP" --strip-unneeded "$USR/bin/node" || true
+
+      cd "$REPO_ROOT/host-app"
+      ./gradlew assembleRelease
+
+    # ⚠️ 待补：`output:` 路径、以及 `android:` / `srclibs:` 等字段
+    #    （需先在本机用 fdroid lint / fdroid build 校验一次才能确定）
+
+# ───────────────────────── 附：无 Gradle 步骤时的写法（备查）─────────────────────────
+# 本应用是 Gradle 项目，因此用 `gradle:` 而非纯 `build:` 跑 gradle；
+# 但**前置的 C/C++ 交叉编译**只能靠 build 里的自定义步骤 —— 这正是本配方的主体。
