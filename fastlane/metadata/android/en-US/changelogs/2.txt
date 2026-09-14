@@ -1,11 +1,8 @@
 First release candidate.
 
-- Engine upgraded to DeepSeek Harness 0.1.5-rc.2, with native addons cross-compiled for Android.
-- Approvals: the sheet can always be reopened after being dismissed, so a turn can no longer get
-  stuck waiting for an answer.
-- Failed turns now show the reason reported by the engine instead of stopping silently.
-- Fixed: approval buttons no longer stop the turn; statistics no longer carry over between
-  sessions; parallel tool timings are attributed correctly; the drawer shows the real running
-  state; relative timestamps keep ticking; sorting by creation time works; failed model, effort
-  and permission changes are reported.
-- Security: API key stored encrypted, backups disabled, network limited to localhost.
+- Engine: DeepSeek Harness 0.1.5-rc.2, Android native addons cross-compiled.
+- Approvals can be reopened after dismissal, so turns no longer get stuck.
+- Failed turns show the engine's reason instead of stopping silently.
+- Fixed: approval buttons no longer stop the turn; per-session stats no
+  longer carry over; parallel tool timings; drawer running state; sorting.
+- Security: encrypted key storage, backups off, localhost-only network.
