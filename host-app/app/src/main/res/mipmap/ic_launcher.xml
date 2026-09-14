@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- API < 26 回退：品牌蓝底 + 白色 8 角星 -->
+<!-- API < 26 回退：品牌蓝底 + 小头鼠海豚剪影（与自适应图标同源几何） -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/ic_launcher_background" />
     <item android:drawable="@drawable/ic_launcher_foreground" />
