@@ -1,0 +1,38 @@
+DSHA brings the DeepSeek Harness agent engine to Android as a native app.
+
+The engine (a Node.js runtime plus a trimmed bionic prefix) is bundled inside the APK and unpacked
+into the app's private directory on first launch. It then runs directly under the app's own UID —
+no proot, no virtual machine, no separate terminal app, and no computer required. The user interface
+is rendered natively with Jetpack Compose; there is no WebView.
+
+Unlike a thin client, DSHA is a peer of the desktop web client: same engine, same session model,
+same tools, same permission system. What is rewritten is the interaction — a single screen with
+two views (conversation / trajectory), gestures, and a drawer.
+
+Features
+
+- Conversation: streaming typewriter rendering that switches to full Markdown once a message is final;
+  per-turn navigation dots; a per-turn usage panel (cache hits, uncached input, output including
+  reasoning, time to first token, tokens per second, LLM and tool time); context occupancy indicator.
+- Trajectory: a colour-coded operation track, search and type filters, per-row details, and two-way
+  navigation between the trajectory and the corresponding point in the conversation.
+- Native integration: share text or files into a session, notifications for completed turns and
+  pending confirmations, gesture navigation, adjustable message font size, adaptive launcher icon.
+- Composer: separate chips for permission, model and thinking effort (each model exposes its own
+  levels); queue and steer modes while a turn is running.
+- Approvals and questions appear as a sheet from the bottom rather than as permanent cards in the
+  conversation; one tap answers and dismisses.
+- Tool cards collapse to a single summary line when finished, with a live timer while running.
+- When a turn fails, the reason reported by the engine is shown (model error, blocked, aborted,
+  output limit reached) instead of a silent stop.
+
+Notes
+
+- No API key is bundled. You supply your own DeepSeek API key in Settings; the app will not start the
+  engine with a credential it does not have. The key is stored encrypted (Android Keystore backed).
+- The app talks to its own on-device engine over localhost only. Requests to the language model are
+  made by the engine, using your own credentials.
+- The app targets API 28 deliberately: apps targeting API 29 and above may not execute files from
+  their own data directory, which is required to run a bundled engine. This is the same approach used
+  by Termux. A migration path has been evaluated and is documented in the repository.
+- Side-loading is required; the app is not distributed through Google Play.
