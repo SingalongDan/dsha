@@ -53,4 +53,4 @@
 - 通知需系统授予 `POST_NOTIFICATIONS`（targetSdk 28 时系统不会主动弹框，设置页会如实显示状态并可跳转系统设置）
 - 若本机已 root 且希望 shell 工具可执行命令，需在 KernelSU 等管理器中授权本应用，并在 设置 → Android 宿主 打开「Root 模式」
 
-[1.0.0]: https://github.com/OWNER/REPO/releases/tag/v1.0.0
+[1.0.0]: https://github.com/SingalongDan/dsha/releases
