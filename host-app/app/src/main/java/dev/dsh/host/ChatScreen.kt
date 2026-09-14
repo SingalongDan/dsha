@@ -143,14 +143,27 @@ fun ChatScreen(
     var highlightKey by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(focusNodeKey, nodes.size) {
         val k = focusNodeKey ?: return@LaunchedEffect
-        val idx = nodes.indexOfFirst { it.meta["toolCallId"] == k || it.key == k }
+        // 直接按 key / toolCallId 匹配（工具行走这条）
+        var idx = nodes.indexOfFirst { it.meta["toolCallId"] == k || it.key == k }
+        if (idx < 0) {
+            // **兜底：按事件 seq 匹配**。轨迹行的 key 是 "$type:$seq"（如 user/message:42），
+            // 而对话节点的 key 命名空间不同（user:$seq / a:… / disclose:$seq），只有 TOOL 节点带
+            // toolCallId —— 于是"在会话中查看"对**非工具行**（用户消息/助手消息/步骤/系统/压缩）
+            // 全都匹配不上：点了只切到会话页，不滚动、不高亮、也没有任何反馈，看起来像坏了。
+            // 两边的 seq 来自同一个事件序号，用它兜底即可命中。
+            val seq = k.substringAfterLast(':').toIntOrNull()
+            if (seq != null) idx = nodes.indexOfFirst { it.meta["seq"] == seq.toString() }
+        }
         if (idx >= 0) {
             follow = false
             listState.scrollToItem(idx)
-            highlightKey = k
+            highlightKey = nodes[idx].key
             onFocusConsumed()
             kotlinx.coroutines.delay(1600)
             highlightKey = null
+        } else {
+            // 匹配不上时也要给出口：否则用户以为按钮坏了（消费掉，避免反复重试）
+            onFocusConsumed()
         }
     }
 
