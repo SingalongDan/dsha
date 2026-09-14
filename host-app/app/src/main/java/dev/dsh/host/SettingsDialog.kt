@@ -516,14 +516,14 @@ private fun AboutSection(provider: SettingsProvider) {
         item { SettingRow("引擎（DSH）", v?.first ?: "读取中…") }
         item { SettingRow("运行时", v?.second ?: "读取中…") }
         item { SettingRow("渲染", "Jetpack Compose 原生（非 WebView）") }
-        item { SettingRow("许可", "AGPL-3.0") }
+        item { SettingRow("许可", "AGPL-3.0-only") }
         item { SettingRow("数据", "API Key 仅存本机，不会上传；本应用不含任何内置密钥") }
         item {
             Text(
                 "DSHA 是 DeepSeek Harness 的 Android 原生客户端：引擎（bionic 前缀 + node）" +
                     "直接跑在手机本机，界面用 Jetpack Compose 渲染。\n\n" +
-                    "本项目与上游 DeepSeek Harness 均以 AGPL-3.0 发布；" +
-                    "运行时组件（bionic / openssl / Termux 前缀）遵循各自许可。",
+                    "本项目自有代码以 AGPL-3.0-only 发布（最严格的自由软件许可，SPDX: AGPL-3.0-only）；" +
+                    "上游引擎 @deepseek-ai/dsh 为 MIT，运行时组件（bionic / openssl / Termux 前缀）与各 npm 依赖遵循各自许可，清单见仓库 NOTICE.md。",
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 12.dp),

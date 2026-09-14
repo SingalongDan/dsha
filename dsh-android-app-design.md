@@ -512,7 +512,7 @@ dev.dsh.host/
 ## 10. 软件信息/开源协议（第 6 栏目细化）
 
 - 展示：应用名 DSHA / 版本 / 构建号 / 渠道（debug/release）/ 引擎（当前随包 dsh 0.1.5-rc.2 + node 24.18.0，**运行时读取**，非硬编码）/ 权限清单。
-- 开源协议文本：内嵌 LICENSE（AGPL-3.0 全文本），并列出关键第三方许可链接。
+- 开源协议文本：内嵌 LICENSE（AGPL-3.0 全文），SPDX 标识为 **AGPL-3.0-only**，并列出关键第三方许可链接（`NOTICE.md`）。
 - 数据/隐私：API Key 仅存本机（credentials 文件），不上传；崩溃日志仅本机。
 
 ---
@@ -562,7 +562,7 @@ dev.dsh.host/
 9. ✅ 会话搜索（本地过滤；引擎 session/search 索引 openAt=never 禁用）
 10. ✅ @ 路径补全（fileReferences/list → 候选 → @path 插入，真机验证 todo-test.txt）
 11. ✅ 附件缩略图轨 AttachRail（选图 → 缩略图+× → 发送带附件，真机验证）
-12. ✅ About 发布页（v0.2.0 / AGPL-3.0 / Compose 声明）
+12. ✅ About 发布页（版本 / AGPL-3.0-only / Compose 声明）
 13. ✅ 性能基准（jank 11.45% / 90分位 16ms / 内存 126MB / snapshot 180 事件 → 151 节点）
 14. ✅ 发布签署（keystore/dsh-release.jks + signingConfig release；确认 side-load 分发——targetSdk 28 为引擎 exec 权限关键）
 15. ✅ 消息反馈（👍👎 全链路：semantics 定位 → onFeedback → messageFeedback/put）
