@@ -668,15 +668,22 @@ class SessionStreamController(
                     val cr = usage.optLong("cacheReadTokens", 0)
                     val cw = usage.optLong("cacheWriteTokens", 0)
                     val reasoning = usage.optLong("reasoningTokens", 0)
+                    // 会话级 tokens/s 依赖 decodeMs / decodeTokens —— 这两个字段此前**从未被写入**，
+                    // 于是 StatsBar 里"tps > 0 才显示"的条件恒假，会话级速度永远不显示
+                    // （而单轮"本轮用量"面板走 TurnStat 路径，显示正常，容易被误判为引擎没上报）。
+                    val key0 = "${data.optInt("turn")}:${data.optInt("step")}"
+                    val ds0 = decodeStartTimes.remove(key0)
+                    val decodeMs0 = if (ds0 != null) (time - ds0).coerceAtLeast(0) else 0L
                     _stats.value = _stats.value.copy(
                         inputTokens = _stats.value.inputTokens + input,
                         outputTokens = _stats.value.outputTokens + output,
                         cacheRead = _stats.value.cacheRead + cr,
                         cacheWrite = _stats.value.cacheWrite + cw,
+                        decodeMs = _stats.value.decodeMs + decodeMs0,
+                        decodeTokens = _stats.value.decodeTokens + output,
                     )
-                    val key = "${data.optInt("turn")}:${data.optInt("step")}"
-                    val ds = decodeStartTimes.remove(key)
-                    val decodeMs = if (ds != null) (time - ds).coerceAtLeast(0) else 0L
+                    // 复用上面已经取过一次的 decode 起点（decodeStartTimes.remove 只能取一次，
+                    // 重复调用第二次会拿到 null → 单轮 decodeMs 变 0、TPS 消失）
                     updateTurn(data.optInt("turn")) {
                         it.copy(
                             inputTokens = it.inputTokens + input,
@@ -684,7 +691,7 @@ class SessionStreamController(
                             reasoningTokens = it.reasoningTokens + reasoning,
                             cacheRead = it.cacheRead + cr,
                             cacheWrite = it.cacheWrite + cw,
-                            decodeMs = it.decodeMs + decodeMs,
+                            decodeMs = it.decodeMs + decodeMs0,
                             decodeTokens = it.decodeTokens + output,
                         )
                     }

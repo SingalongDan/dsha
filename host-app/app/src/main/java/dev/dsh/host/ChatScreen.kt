@@ -393,7 +393,14 @@ fun ChatScreen(
         AttachRail(attachments, onAttachRemove)
         // 上下文占用胶囊（web ContextMeter；点击看明细）
         val ctxWindow = requestMeta.third
-        val ctxUsed = stats.inputTokens + stats.cacheRead + stats.outputTokens
+        // **占用的语义是"当前上下文里有多少 token"，不是"这个会话一共用了多少"**。
+        // 此前用 stats（整会话累计）→ 连续几轮后胶囊会显示 >100%、明细里"剩余 0"，
+        // 而单轮会话看着又正常，很容易被当成引擎上报错误。改为取**最近一轮**的用量：
+        // 未缓存输入 + 缓存读（+ 本轮输出），这正是最后一次请求占据窗口的部分。
+        val lastTurnStat = turnStats.keys.maxOrNull()?.let { turnStats[it] }
+        val ctxUsed = lastTurnStat?.let {
+            it.inputTokens + it.cacheRead + it.outputTokens
+        } ?: (stats.inputTokens + stats.cacheRead + stats.outputTokens)
         var ctxOpen by remember { mutableStateOf(false) }
         if (ctxOpen) {
             ContextMeterDialog(ctxUsed, ctxWindow, requestMeta.first, requestMeta.second) { ctxOpen = false }
