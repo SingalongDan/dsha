@@ -137,9 +137,12 @@ class DshStreamClient(
         return streamId
     }
 
-    fun cancel(streamId: String) {
+    /** 发送 cancel 帧；返回 false 表示 socket 不可用、该帧已被丢弃（调用方据此可知取消未送达）。 */
+    fun cancel(streamId: String): Boolean {
         streams.remove(streamId)
-        ws?.send(JSONObject().put("type", "cancel").put("streamId", streamId).toString())
+        val sent = ws?.send(JSONObject().put("type", "cancel").put("streamId", streamId).toString()) ?: false
+        if (!sent) Log.w(TAG, "cancel frame dropped (no socket): streamId=${streamId.take(8)}")
+        return sent
     }
 
     fun close() {

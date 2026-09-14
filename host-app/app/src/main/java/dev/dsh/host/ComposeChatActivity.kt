@@ -925,6 +925,10 @@ class ComposeChatActivity : ComponentActivity() {
                 // 打开抽屉时 A 仍带"运行中"角标，菜单里还挂着"停止运行"（点下去对已结束的会话发 cancel）。
                 LaunchedEffect(drawerState.isOpen) {
                     if (drawerState.isOpen) runCatching { refreshSessions() }
+                        .onFailure {
+                            Log.e("DshStream", "refreshSessions failed", it)
+                            runOnUiThread { notify("刷新会话列表失败：${it.message ?: "引擎未就绪"}") }
+                        }
                 }
                 val drawerScope = rememberCoroutineScope()
                 ModalNavigationDrawer(
@@ -1131,6 +1135,10 @@ class ComposeChatActivity : ComponentActivity() {
                                                         lifecycleScope.launch(Dispatchers.IO) {
                                                             runCatching { api.selectModel(sid, prov, mid, eff) }
                                                                 .onSuccess { refreshSessions() }
+                                                                .onFailure {
+                                                                    Log.e("DshStream", "selectEffort failed", it)
+                                                                    runOnUiThread { notify("切换思考强度失败：${it.message ?: "引擎未就绪"}") }
+                                                                }
                                                         }
                                                     }
                                                     .setNegativeButton("取消", null)
@@ -1147,6 +1155,10 @@ class ComposeChatActivity : ComponentActivity() {
                                                     val sid = sessionId ?: return@setItems
                                                     lifecycleScope.launch(Dispatchers.IO) {
                                                         runCatching { api.executeCommand(sid, "/permission ${ids[w]}") }
+                                                            .onFailure {
+                                                                Log.e("DshStream", "permission preset failed", it)
+                                                                runOnUiThread { notify("切换权限失败：${it.message ?: "引擎未就绪"}") }
+                                                            }
                                                     }
                                                 }
                                                 .setNegativeButton("取消", null)
@@ -1324,6 +1336,10 @@ class ComposeChatActivity : ComponentActivity() {
                                                 lifecycleScope.launch(Dispatchers.IO) {
                                                     runCatching { api.selectModel(sid, prov, mid) }
                                                         .onSuccess { refreshSessions() }
+                                                        .onFailure {
+                                                            Log.e("DshStream", "selectModel failed", it)
+                                                            runOnUiThread { notify("切换模型失败：${it.message ?: "引擎未就绪"}") }
+                                                        }
                                                 }
                                             }
                                             .padding(vertical = 10.dp),
@@ -1683,7 +1699,7 @@ class ComposeChatActivity : ComponentActivity() {
                             )
                         }
                     }
-                    Text(conn, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(connLabel(conn), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 IconButton(onClick = onRefresh) {
                     Icon(Icons.Filled.Sync, contentDescription = "刷新会话", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
@@ -1927,6 +1943,7 @@ class ComposeChatActivity : ComponentActivity() {
                 controller?.switchSession(sid)
             } catch (e: Exception) {
                 Log.e("DshStream", "createSession failed", e)
+                runOnUiThread { notify("新建会话失败：${e.message ?: "引擎未就绪"}") }
             }
         }.start()
     }
@@ -1993,6 +2010,10 @@ class ComposeChatActivity : ComponentActivity() {
     private fun stopSession(sid: String) {
         lifecycleScope.launch(Dispatchers.IO) {
             runCatching { api.cancel(sid) }
+                .onFailure {
+                    Log.e("DshStream", "cancel failed", it)
+                    runOnUiThread { notify("停止失败：${it.message ?: "引擎未就绪"}") }
+                }
             // 稍等引擎状态落定后刷新列表：否则被取消会话的"运行中"角标会一直是旧的
             // （取消的是**其它**会话时，当前会话的 running 不变，不会触发自动刷新）
             kotlinx.coroutines.delay(1200)
@@ -2131,6 +2152,10 @@ class ComposeChatActivity : ComponentActivity() {
         val sid = sessionId ?: return
         lifecycleScope.launch(Dispatchers.IO) {
             runCatching { api.cancel(sid) }
+                .onFailure {
+                    Log.e("DshStream", "cancel failed", it)
+                    runOnUiThread { notify("停止失败：${it.message ?: "引擎未就绪"}") }
+                }
         }
     }
 
@@ -2174,4 +2199,18 @@ class ComposeChatActivity : ComponentActivity() {
             return String(buf, Charsets.UTF_8)
         }
     }
+}
+
+/**
+ * 顶栏的连接状态文案。
+ * 此前直接把 ConnectionState.name 显示出来 —— 界面上会出现 IDLE / CONNECTING / CONNECTED /
+ * RECONNECTING / AUTH_LOST 这些英文枚举，与全中文界面不一致，且 AUTH_LOST 用户读不懂。
+ */
+private fun connLabel(state: String): String = when (state) {
+    "IDLE" -> "未连接"
+    "CONNECTING" -> "连接中…"
+    "CONNECTED" -> "已连接"
+    "RECONNECTING" -> "重连中…"
+    "AUTH_LOST" -> "鉴权失效，重连中…"
+    else -> state
 }
