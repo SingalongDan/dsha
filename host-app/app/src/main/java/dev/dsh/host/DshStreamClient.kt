@@ -68,9 +68,9 @@ class DshStreamClient(
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
-            Log.d(TAG, "raw frame: ${text.take(120)} streams=${client.streams.size}")
+            Log.d(TAG, "raw frame: ${text.length}B streams=${client.streams.size}")
             val frame = try { JSONObject(text) } catch (e: Exception) {
-                Log.e(TAG, "bad frame: ${text.take(120)}", e); return
+                Log.e(TAG, "bad frame: ${text.length}B", e); return
             }
             val streamId = frame.optString("streamId")
             Log.d(TAG, "dispatch streamId=${streamId.take(8)} registered=${client.streams.containsKey(streamId)}")

@@ -358,7 +358,7 @@ class SessionStreamController(
                 api.eventsResult(pending.clientId, pending.eventId, outcome)
             }.onSuccess {
                 if (_pendingEvent.value?.eventId == pending.eventId) _pendingEvent.value = null
-                Log.d(TAG, "waterfall answered ${pending.event} ${pending.eventId} value=$value")
+                Log.d(TAG, "waterfall answered ${pending.event} ${pending.eventId} (${value.toString().length}B)")
             }.onFailure {
                 // 失败时清掉挂起，避免 UI 永久锁定（用户可重新触发）
                 if (_pendingEvent.value?.eventId == pending.eventId) _pendingEvent.value = null

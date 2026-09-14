@@ -47,13 +47,29 @@ class DshHostService : Service() {
         startForeground(NOTIF_ID, buildNotification())
         val restart = intent?.getBooleanExtra("restart", false) == true
         if (restart) {
-            // 快速重启：杀掉进程、重置退避、唤醒休眠中的循环（或重启已退出的循环线程）
+            // 重启：**必须先确认旧进程真的退出**再拉起新的。
+            // 原实现只 destroy()（SIGTERM）就立刻起新线程，而 Process.waitFor() 不响应 interrupt →
+            // 旧 node 若忽略 SIGTERM（正在写会话日志/跑工具），3080 端口仍被占用，新进程直接
+            // EADDRINUSE 退出 → 看门狗再退避重启，用户看到的是"点了重启，几分钟用不了"。
             backoff = RESTART_BASE_MS
-            proc?.destroy()
             engineThread?.interrupt()
-            if (engineThread?.isAlive != true) {
-                engineThread = Thread(::engineLoop, "dsh-host").also { it.start() }
-            }
+            Thread {
+                runCatching {
+                    proc?.let { p ->
+                        p.destroy()
+                        if (!p.waitFor(5, java.util.concurrent.TimeUnit.SECONDS)) {
+                            android.util.Log.w("DshHost", "engine ignored SIGTERM, killing")
+                            p.destroyForcibly()
+                            p.waitFor(3, java.util.concurrent.TimeUnit.SECONDS)
+                        }
+                    }
+                    engineThread?.join(2000)
+                }
+                proc = null
+                if (engineThread?.isAlive != true) {
+                    engineThread = Thread(::engineLoop, "dsh-host").also { it.start() }
+                }
+            }.start()
         } else if (!running) {
             running = true
             engineThread = Thread(::engineLoop, "dsh-host").also { it.start() }
@@ -153,6 +169,11 @@ class DshHostService : Service() {
             )
             try {
                 val logFile = File(filesDir, "dsh-node.log")
+                // 日志轮转：引擎 stdout/stderr 此前无限追加（持续吃存储，且内含引擎 token 与会话正文）。
+                // 超过 2MB 即清空——新进程启动会立即写入新的 token 行，readTail 仍能取到。
+                if (logFile.exists() && logFile.length() > 2L * 1024 * 1024) {
+                    runCatching { logFile.delete() }
+                }
                 proc = ProcessBuilder(cmd)
                     .directory(prefix)
                     .apply { environment().putAll(env) }

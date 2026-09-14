@@ -1283,15 +1283,28 @@ private fun CollapsibleMono(text: String, modifier: Modifier = Modifier, maxLine
 
 @Composable
 private fun StatusChip(node: TranscriptNode) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp), horizontalArrangement = Arrangement.Center) {
+    val isError = node.kind == NodeKind.ERROR
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 3.dp),
+        horizontalArrangement = if (isError) Arrangement.Start else Arrangement.Center,
+    ) {
         Text(
-            text = (if (node.kind == NodeKind.ERROR) "⚠ " else "") + node.text,
+            // 错误需要能读全（失败原因往往是长句/英文报错），用整行卡片而不是小圆角条
+            text = (if (isError) "⚠ " else "") + node.text,
             modifier = Modifier
-                .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(14.dp))
-                .padding(horizontal = 10.dp, vertical = 5.dp),
-            color = if (node.kind == NodeKind.ERROR) MaterialTheme.colorScheme.error
+                .then(if (isError) Modifier.fillMaxWidth() else Modifier)
+                .background(
+                    if (isError) MaterialTheme.colorScheme.errorContainer
+                    else MaterialTheme.colorScheme.primaryContainer,
+                    RoundedCornerShape(if (isError) 10.dp else 14.dp),
+                )
+                .padding(horizontal = 12.dp, vertical = if (isError) 8.dp else 5.dp),
+            color = if (isError) MaterialTheme.colorScheme.onErrorContainer
             else MaterialTheme.colorScheme.onPrimaryContainer,
-            fontSize = 12.sp,
+            fontSize = if (isError) 12.sp else 12.sp,
+            lineHeight = if (isError) 17.sp else 16.sp,
         )
     }
 }

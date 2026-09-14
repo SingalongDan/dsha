@@ -343,6 +343,29 @@ class TranscriptBuilder {
                         entries[i] = Entry(entries[i].node.copy(streaming = false), entries[i].startSeq)
                         changed = true
                     }
+                    // **把本轮结束的原因呈现给用户**。
+                    // 引擎在 turn/end 里带 `reason`：{kind:"completed"|"blocked"|"aborted"|"error"|"max-tokens", ...}
+                    // 此前完全忽略它 → 回合失败时界面只显示"已停止"，用户不知道发生了什么。
+                    val reason = data.optJSONObject("reason")
+                    val kind = reason?.optString("kind").orEmpty()
+                    val errMsg = reason?.optJSONObject("error")
+                        ?.let { e -> e.optString("message").ifEmpty { e.optString("type") } }
+                        .orEmpty()
+                    val detail = when (kind) {
+                        "error" -> errMsg.ifEmpty { "模型请求失败" }
+                        "blocked" -> "本轮被阻止（可能是沙箱限制或审批未通过）"
+                        "aborted" -> reason.optString("reason").ifEmpty { "本轮已中止" }
+                        "max-tokens" -> "达到最大输出长度，本轮被截断"
+                        else -> ""
+                    }
+                    if (detail.isNotEmpty()) {
+                        push(seq, TranscriptNode(
+                            key = "turnend:$seq",
+                            kind = if (kind == "error") TranscriptNode.NodeKind.ERROR else TranscriptNode.NodeKind.STATUS,
+                            text = detail.take(400),
+                        ))
+                        changed = true
+                    }
                     return changed
                 }
                 "approval/asked" -> {
@@ -478,7 +501,23 @@ class TranscriptBuilder {
 
         private fun replaceRange(start: Int, end: Int) {
             entries.removeAll { it.startSeq in start..end }
-            // 裁剪后再 append 进入的新事件即可
+            // **必须重建工具索引**：entries 是 MutableList，删除后所有后续元素索引整体前移，
+            // 而 toolById 里存的是绝对索引 → 之后任何按 id 命中的分支都会写到别人的节点上，
+            // 甚至越界抛 IndexOutOfBoundsException（异常发生在 WS 回调线程 → follow/control/$events
+            // 三条流一起死，界面永远停在"连接中"）。裁剪后重建，成本可忽略（列表仅数百项）。
+            rebuildToolIndex()
+        }
+
+        /** 工具 callId → entries 下标 的全量重建（列表被裁剪后必须调用）。 */
+        private fun rebuildToolIndex() {
+            toolById.clear()
+            for (i in entries.indices) {
+                val n = entries[i].node
+                if (n.kind == TranscriptNode.NodeKind.TOOL) {
+                    val id = n.meta["toolCallId"] ?: n.key
+                    toolById[id] = i
+                }
+            }
         }
 
         private fun findLast(pred: (Entry) -> Boolean): Int {
@@ -527,7 +566,11 @@ class TranscriptBuilder {
             streaming: Boolean,
             startedAt: Long = 0L,
         ): Boolean {
-            val idx = toolById[id] ?: run {
+            // 防御：索引可能因列表裁剪而失效（越界或指向非 TOOL 节点）→ 视为未命中，走新建分支。
+            // 这样即使将来有其它裁剪路径忘了重建索引，也只会退化成"多一张卡"，不会崩掉三条流。
+            val idx = toolById[id]?.takeIf {
+                it in entries.indices && entries[it].node.kind == TranscriptNode.NodeKind.TOOL
+            } ?: run {
                 val node = TranscriptNode(
                     key = id, kind = TranscriptNode.NodeKind.TOOL, toolName = name,
                     toolArgs = delta, toolStatus = status, streaming = streaming,

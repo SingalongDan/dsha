@@ -453,7 +453,7 @@ private fun AndroidHostSection(provider: SettingsProvider) {
         item {
             SettingRow(
                 title = "API Key",
-                value = if (keyMasked) "已设置（sk-…）" else "使用内置默认",
+                value = if (keyMasked) "已设置（sk-…）" else "未设置（点击填写）",
                 onClick = {
                     provider.showApiKeyDialog(onSet = { set -> keyMasked = set })
                 },

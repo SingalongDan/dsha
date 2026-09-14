@@ -44,6 +44,8 @@ import java.io.File
 class ComposeChatActivity : ComponentActivity() {
 
     companion object {
+        /** 外部分享文件复制到工作区的体积上限（分享方可能是任意 App）。 */
+        private const val MAX_SHARED_FILE_BYTES = 50L * 1024 * 1024
         /** 单条消息最多附件数（base64 全量驻留内存 + 随 POST 发送，需设上限）。 */
         private const val MAX_ATTACHMENTS = 4
 
@@ -303,7 +305,22 @@ class ComposeChatActivity : ComponentActivity() {
             return null
         }
         runCatching {
-            input.use { ins -> out.outputStream().use { ins.copyTo(it) } }
+            input.use { ins ->
+                // **体积上限**：分享来源可能是任意 App，超大文件会耗尽存储
+                var copied = 0L
+                out.outputStream().use { os ->
+                    val buf = ByteArray(64 * 1024)
+                    while (true) {
+                        val n = ins.read(buf)
+                        if (n <= 0) break
+                        copied += n
+                        if (copied > MAX_SHARED_FILE_BYTES) {
+                            throw IllegalStateException("分享文件超过 ${MAX_SHARED_FILE_BYTES / 1024 / 1024}MB 上限，已拒绝")
+                        }
+                        os.write(buf, 0, n)
+                    }
+                }
+            }
         }.onFailure {
             Log.e("DshNotif", "copy failed", it)
             return null
@@ -444,22 +461,27 @@ class ComposeChatActivity : ComponentActivity() {
         }
         pendingShare.value = null
         lifecycleScope.launch(Dispatchers.IO) {
-            runCatching {
-                // 复用统一的建会话路径（引擎默认预设/权限）
-                val newId = createSessionDirect(preset = null)
-                refreshSessions()
-                runOnUiThread {
-                    if (newId.isNotEmpty()) switchToSession(newId)
-                    injectToComposer.value = text
-                    notify("已接收分享内容，可直接发送或补充说明")
+            // **finally 释放守卫**：异常路径也必须放开，否则 compareAndSet 永远失败 →
+            // 本次及以后每次分享都会被静默丢弃（用户完全无感），直到杀进程。
+            try {
+                runCatching {
+                    // 复用统一的建会话路径（引擎默认预设/权限）
+                    val newId = createSessionDirect(preset = null)
+                    refreshSessions()
+                    runOnUiThread {
+                        if (newId.isNotEmpty()) switchToSession(newId)
+                        injectToComposer.value = text
+                        notify("已接收分享内容，可直接发送或补充说明")
+                    }
+                }.onFailure {
+                    Log.e("DshNotif", "share session create failed", it)
+                    runOnUiThread {
+                        injectToComposer.value = text     // 至少把内容交给输入框
+                        notify("已接收分享内容（建会话失败，已放入输入框）")
+                    }
                 }
+            } finally {
                 shareApplyGuard.set(false)
-            }.onFailure {
-                Log.e("DshNotif", "share session create failed", it)
-                runOnUiThread {
-                    injectToComposer.value = text     // 至少把内容交给输入框
-                    notify("已接收分享内容")
-                }
             }
         }
     }
@@ -751,7 +773,7 @@ class ComposeChatActivity : ComponentActivity() {
                             }
                             android.app.AlertDialog.Builder(this@ComposeChatActivity)
                                 .setTitle("DEEPSEEK_API_KEY")
-                                .setMessage("留空恢复默认值；保存后重启引擎生效")
+                                .setMessage("清空则不再向引擎注入密钥；保存后重启引擎生效")
                                 .setView(et)
                                 .setPositiveButton("保存") { _, _ ->
                                     val v = et.text.toString().trim()
@@ -1694,7 +1716,17 @@ class ComposeChatActivity : ComponentActivity() {
 
     // ---------------- bootstrap ----------------
 
+    /**
+     * bootstrap 防重入：冷启动、两个「重试」入口、以及重鉴权线程都可能触发它。
+     * 并发执行会在"一个会话都没有"时建出多个空会话并互相覆盖 sessionId。
+     */
+    private val bootstrapping = java.util.concurrent.atomic.AtomicBoolean(false)
+
     private fun bootstrap() {
+        if (!bootstrapping.compareAndSet(false, true)) {
+            Log.d("DshStream", "bootstrap already running, skip")
+            return
+        }
         val t0 = System.currentTimeMillis()
         fun phase(name: String) =
             Log.d("DshPerf", "bootstrap.$name +${System.currentTimeMillis() - t0}ms")
@@ -1722,9 +1754,12 @@ class ComposeChatActivity : ComponentActivity() {
                 prefs.edit().putBoolean("welcomed", true).apply()
             }
             Log.d("DshStream", "streaming session $sid")
+            bootError = null          // 成功即清错误态（给失败态一条自动恢复路径）
         } catch (e: Exception) {
             Log.e("DshStream", "bootstrap failed", e)
             bootError = "启动失败: ${e.message}"
+        } finally {
+            bootstrapping.set(false)
         }
     }
 
@@ -1754,7 +1789,16 @@ class ComposeChatActivity : ComponentActivity() {
                     true
                 }.getOrDefault(false)
                 if (ok) {
-                    controller?.switchSession(sessionId ?: return@Thread)
+                    // 引擎活了 → 清错误态并确保有会话在跟随。
+                    // 此前若 bootstrap 在 switchSession 之前失败，sessionId 为空 → 这里直接 return，
+                    // 界面会永远停在"启动失败"，只有手动重试才能恢复（实测遇到）。
+                    runOnUiThread { bootError = null }
+                    val sid = sessionId ?: runCatching { pickSession() }.getOrNull()
+                    if (sid != null) {
+                        sessionId = sid
+                        runOnUiThread { currentSessionId.value = sid }
+                        controller?.switchSession(sid)
+                    }
                     Log.d("DshStream", "re-auth + follow OK (attempt $attempt)")
                     return@Thread
                 }

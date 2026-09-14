@@ -20,7 +20,9 @@ import java.util.UUID
  */
 class DshApiClient(private val base: String = "http://127.0.0.1:3080") {
 
-    private var cookie: String? = null
+    // 由 bootstrap/重鉴权线程写入，OkHttp WS 线程与 IO 线程读取 → 必须 volatile
+    // （否则断线重连时可能握手不带 Cookie，表现为"重连不上"，且难复现）
+    @Volatile private var cookie: String? = null
 
     fun hasCookie(): Boolean = cookie != null
 
@@ -38,7 +40,7 @@ class DshApiClient(private val base: String = "http://127.0.0.1:3080") {
             conn.connect()
             val setCookie = findSetCookie(conn.headerFields)
             cookie = setCookie?.substringBefore(';')
-            android.util.Log.d("DshApi", "auth code=${conn.responseCode} cookie=${cookie?.take(24)}")
+            android.util.Log.d("DshApi", "auth code=${conn.responseCode} cookie=${cookie != null}")
         } finally {
             conn.disconnect()
         }
@@ -86,7 +88,7 @@ class DshApiClient(private val base: String = "http://127.0.0.1:3080") {
             val code = conn.responseCode
             val text = (if (code in 200..299) conn.inputStream else conn.errorStream)
                 ?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: ""
-            android.util.Log.d("DshApi", "POST $url -> $code: ${text.take(120)}")
+            android.util.Log.d("DshApi", "POST $url -> $code (${text.length}B)")
             if (code !in 200..299) throw DshRpcException("HTTP $code: $text")
             val resp = JSONObject(text)
             val result = resp.getJSONObject("result")
