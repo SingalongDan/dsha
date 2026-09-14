@@ -1,0 +1,77 @@
+# F-Droid 构建元数据草稿（供审阅，**尚未提交到 fdroiddata**）
+#
+# 提交方式（据官方快速入门指南）：
+#   1. Fork https://gitlab.com/fdroid/fdroiddata
+#   2. 把本文件放到 `metadata/dev.dsh.host.yml`
+#   3. 本地用 fdroidserver 校验：fdroid readmeta / rewritemeta / lint / checkupdates / build
+#   4. 推分支并开 **Merge Request**，标签选 `New App`
+#
+# ⚠️ 本文件是草稿。其中 `Builds` 块依赖第 ④ 步（构建配方）尚未完成，
+#    因此**现在提交会因无法构建而被退回** —— 应先完成配方再提。
+
+Categories:
+  - Development
+  - Internet
+License: AGPL-3.0-only
+AuthorName: DSHA contributors
+SourceCode: https://github.com/SingalongDan/dsha
+IssueTracker: https://github.com/SingalongDan/dsha/issues
+RepoType: git
+Repo: https://github.com/SingalongDan/dsha.git
+
+# 依赖非自由的网络服务（DeepSeek 官方 API）。
+# 据政策这**不阻止收录**，但必须如实声明。
+AntiFeatures:
+  - NonFreeNet
+
+Description: |-
+  DSHA brings the DeepSeek Harness agent engine to Android as a native app.
+
+  The engine (a Node.js runtime plus a trimmed bionic prefix) is bundled inside the APK and unpacked
+  into the app's private directory on first launch. It then runs directly under the app's own UID —
+  no proot, no virtual machine, no separate terminal app, and no computer required. The user interface
+  is rendered natively with Jetpack Compose; there is no WebView.
+
+  Conversation view with streaming Markdown rendering, per-turn usage statistics and context
+  occupancy. Trajectory view with a colour-coded operation track and two-way navigation between the
+  trajectory and the conversation. Share text or files into a session; notifications for completed
+  turns and pending confirmations. Approvals and questions appear as a bottom sheet.
+
+  No API key is bundled: you supply your own. The key is stored encrypted (Android Keystore backed).
+  The app communicates only with its own on-device engine over localhost.
+
+Builds:
+  # ── 待完成：见第 ④ 步（构建配方）──
+  #
+  # 核心难点：本应用需要**针对 bionic 交叉编译的 Node.js 运行时**，而它无法从任何白名单来源取得：
+  #   - nodejs.org 官方制品是 glibc 链接、且没有 android 目标
+  #   - Debian 的 nodejs 同样是 glibc
+  #   - 唯一持续产出 bionic Node 的 Termux 明令禁止复用其包仓库
+  # 因此配方必须在构建机内**从源码交叉编译 Node 及其依赖库**（Termux 自述单架构约 2 小时）。
+  #
+  # 参考结构（f-droid 快速入门指南：非 Gradle 工具链可用 sudo/prebuild/build 自定义步骤）：
+  #
+  #   sudo:
+  #     - apt-get install -y <交叉编译所需工具链/依赖>
+  #   prebuild: <获取源码、配置交叉编译环境>
+  #   build: <交叉编译 node + 依赖库 → 交叉编译两个原生插件 → gradle assembleRelease>
+  #   output: app/build/outputs/apk/release/app-release-unsigned.apk
+  #
+  # 注意：`prebuild` 的产物二进制会被清理，**产出二进制的步骤必须放 `build`**。
+  - versionName: 0.1.0-rc1
+    versionCode: 2
+    commit: v0.1.0-rc1
+    subdir: host-app
+    gradle:
+      - assembleRelease
+    # 说明：`host-app` 是 Gradle 根目录；应用模块为 `:app`。
+    #       Gradle **wrapper 已在仓库内**（8.13），符合 F-Droid 模板默认走 wrapper 的要求。
+    #       依赖仓库默认只走 google() + mavenCentral()（区域镜像在显式开关后面，不在默认路径）。
+    # ⚠️ 待补：编译随包 Node 运行时的自定义步骤（sudo / prebuild / build）——见上方说明
+
+AutoUpdateMode: None
+# ⚠️ 先用 None 手动更新：`UpdateCheckMode: Tags` 的默认正则通常期望 `v1.2.3` 形式，
+#    我们的标签带 `-rc1` 后缀，是否被接受**未实测**。确认后再切换为 Tags。
+UpdateCheckMode: None
+CurrentVersion: 0.1.0-rc1
+CurrentVersionCode: 2
