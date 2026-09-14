@@ -200,15 +200,27 @@ class SessionStreamController(
     /** 会话代际：切换会话时递增，旧流的回调到达后直接丢弃。 */
     private val sessionGeneration = java.util.concurrent.atomic.AtomicInteger(0)
 
-    /** 打开 follow 流（幂等）。sessionId 从 api 层读取。 */
-    fun startFollow(sessionId: String) {
-        if (following.get()) return
+    /**
+     * 打开 follow 流（幂等）。
+     *
+     * `force = true` 用于**流级重连**：此时 `following` 仍为 true（会话没切、只是流断了），
+     * 若走幂等分支会**立即 return，重连等于没做** —— 表现是 follow 流收到 end/error 后界面
+     * 永远停在最后一帧（若当时 running=true 就一直显示"深度求索中…"），没有任何提示。
+     * 引擎进程死亡那条路径不受影响（socket 关闭 → AUTH_LOST → 重新鉴权 → switchSession 重建）。
+     */
+    fun startFollow(sessionId: String, force: Boolean = false) {
+        if (!force && following.get()) return
         following.set(true)
         reconnectJob?.cancel()
         reconnectJob = scope.launch(Dispatchers.IO) {
             while (following.get() && sessionIdRef == sessionId) {
                 val ok = openFollow(sessionId)
-                if (ok) return@launch
+                if (ok) {
+                    // 连上了就把退避复位：否则一次长时间断网会把退避顶到 30s 上限，
+                    // 之后每次小抖动都要等 30s 才重连（此前成功分支没有复位）。
+                    backoff.set(3000)
+                    return@launch
+                }
                 _connection.value = ConnectionState.RECONNECTING
                 delay(backoff.get())
             }
@@ -446,7 +458,11 @@ class SessionStreamController(
             delay(backoff.getAndSet((backoff.get() * 2).coerceAtMost(30_000)))
             if (following.get()) {
                 val sid = sessionIdRef
-                if (sid != null) startFollow(sid)
+                // force=true：否则 startFollow 的幂等检查会直接 return（following 仍为 true），
+                // 流级 end/error 之后永远不会真正重连。
+                if (sid != null) {
+                    startFollow(sid, force = true)
+                }
             }
         }
     }
