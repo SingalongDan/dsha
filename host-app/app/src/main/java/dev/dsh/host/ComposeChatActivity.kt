@@ -597,7 +597,11 @@ class ComposeChatActivity : ComponentActivity() {
     /** 会话搜索关键词（与排序/置顶共同决定展示列表）。 */
     private var sessionQuery = mutableStateOf("")
 
-    private fun sessionCreatedAt(s: SessionItem): Long = s.updatedAt - 1 // 无 createdAt 字段时退化
+    // 排序键：会话真实创建时间。
+    // 此前是 `s.updatedAt - 1`（注释写"无 createdAt 字段时退化"）—— 但 createdAt **其实已经解析**
+    // （见 session/list 的解析处），于是"按创建时间排序"与"按最近更新排序"的键只差 1ms，
+    // 切换排序看不出任何变化，用户会以为按钮坏了。仅老数据缺 createdAt 时才回落到 updatedAt。
+    private fun sessionCreatedAt(s: SessionItem): Long = if (s.createdAt > 0) s.createdAt else s.updatedAt
     private var openDrawer = mutableStateOf(false)
     private var openSettings = mutableStateOf(false)
     private var themePreference = mutableStateOf("system")
